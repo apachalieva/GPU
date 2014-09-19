@@ -12,6 +12,10 @@ extern "C"{
 #define PARAMF "cavity.dat"
 #define VISUAF "visual/sim"
 
+#define OBSTACLE 0
+#define FLUID 1
+#define INFLOW 2
+
 /**
  * The main operation reads the configuration file, initializes the scenario and
  * contains the main loop. So here are the individual steps of the algorithm:
@@ -219,7 +223,7 @@ __device__ int check_color(float *c, float r, float g, float b)
 	}	
 }
 
-__global__ void global_detect_domain(float *imgIn, float *imgDomain, int w, int h, int n)
+__global__ void global_detect_domain(float *imgIn, int *imgDomain, int w, int h, int n)
 {
 
 	float c[3] = {1.0f, 0.0f, 0.0f};
@@ -240,19 +244,19 @@ __global__ void global_detect_domain(float *imgIn, float *imgDomain, int w, int 
 
 		if (check_color(c, imgIn[ind], imgIn[ind+w*h], imgIn[ind+2*w*h]))
 		{
-			imgDomain[ind] = 1.0f;
+			imgDomain[ind] = FLUID;
 			for (int i=0; i<8; i++)
 			{
 				//TODO: Check if ind+neighbour[i] is in the domain!
 				if ( check_color(c, imgIn[ind+neighbour[i]], imgIn[ind+w*h+neighbour[i]], imgIn[ind+2*w*h+neighbour[i]]) != 1 )
 				{
-					imgDomain[ind+neighbour[i]] = 0.5f;
+					imgDomain[ind+neighbour[i]] = INFLOW;
 				}
 			}
 		}
 		else
 		{
-			imgDomain[ind] = 0.0f;
+			imgDomain[ind] = OBSTACLE;
 		}
 	}
 }
@@ -260,7 +264,7 @@ __global__ void global_detect_domain(float *imgIn, float *imgDomain, int w, int 
 //======================================================================================================================================================
 //==============================================================CFD CODE================================================================================
 
-int mainCFD(int argc, char** args){
+int mainCFD(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res,dp;
 	double **U, **V, **P, **F, **G, **RS;
 	int n, step, it, imax, jmax, itermax, pb;
@@ -473,7 +477,7 @@ int main(int argc, char **argv)
 	float *v1 = new float[(size_t)w*h*nc];
 	float *v2 = new float[(size_t)w*h*nc];
 	float *imgVorticity = new float[(size_t)w*h*mOut.channels()];
-	float *imgDomain = new float[(size_t)w*h];
+	int *imgDomain = new int[(size_t)w*h];
 	// TODO: Temporarly we consider just a grayscale inpainting
 	float *imgU = new float[(size_t)w*h];
 	float *imgV = new float[(size_t)w*h];
@@ -513,7 +517,8 @@ int main(int argc, char **argv)
 	// Calculate gradient
 
 	// allocate GPU memory
-	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_Domain, *gpu_U, *gpu_V;
+	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_U, *gpu_V;
+	int *gpu_Domain;
 
 	cudaMalloc(&gpu_In, n*sizeof(float));
 	CUDA_CHECK;
@@ -641,20 +646,20 @@ int main(int argc, char **argv)
 
 	cudaMalloc(&gpu_In, n*sizeof(float));
 	CUDA_CHECK;
-	cudaMalloc(&gpu_Domain, w*h*sizeof(float));
+	cudaMalloc(&gpu_Domain, w*h*sizeof(int));
 	CUDA_CHECK;
 
 	// copy host memory to device
 	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
 	CUDA_CHECK;
-	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);
 	CUDA_CHECK;
 
 	// launch kernel
 	global_detect_domain <<<grid,block>>> (gpu_In, gpu_Domain, w, h, w*h);
 
 	// copy result back to host (CPU) memory
-	cudaMemcpy(imgDomain, gpu_Domain, w*h * sizeof(float), cudaMemcpyDeviceToHost );
+	cudaMemcpy(imgDomain, gpu_Domain, w*h * sizeof(int), cudaMemcpyDeviceToHost );
 	CUDA_CHECK;
 
 	// free device (GPU) memory
@@ -669,14 +674,14 @@ int main(int argc, char **argv)
     cout << "time: " << t*1000 << " ms" << endl;
 
 
-	mainCFD(argc, argv);
+	mainCFD(argc, argv, imgU, imgV, imgDomain);
 
 
     // show input image
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
 
     // show output image: first convert to interleaved opencv format from the layered raw array
-    convert_layered_to_mat(mOut, v2);
+    convert_layered_to_mat(mOut, imgOut);
     showImage("Output1", mOut, 100+w+40, 100);
 
 
