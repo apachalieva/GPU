@@ -134,89 +134,105 @@ void boundaryvalues(
   double **U,
   double **V,
   int *b, 
-  int **Flag )
+  int **Flag, 
+  float *imgU, 
+  float *imgV, 
+  int *imgDomain
+ 		  )
 {
 	int i, j;
-	int c, bound_now;
-
-	for( c = 0; c < 4; c++ ){
-		bound_now = b[c];
-		/* treating different cases of boundaries
-		 * inflow treated separately
-		 * */
-		switch(bound_now){
-		case 1: no_slip( imax, jmax, U, V, c);
-		break;
-		case 3: outflow( imax, jmax, U, V, c);
-		break;
-		default: free_slip( imax, jmax, U, V, c);
-		break;
-		}
-	}
+  
 	
-	/* Boundary conditions for the obstacle cells */
-	for( i = 1; i <= imax; i++ ){
-	    for( j = 1; j <= jmax; j++ ){
-		if( Flag[i][j] < C_F ){
-		      /* Boundary conditions for obstacles with Northern fluid cell */
-		      if( ( Flag[ i ][ j ] & B_N ) == B_N ){
-			  V[ i ][ j ] = 0; 
-			  U[ i ][ j ] = -U[ i ][ j+1 ];
-			  U[ i-1 ][ j ] = -U[ i-1 ][ j+1 ];
-		      }
-		      /* Boundary conditions for obstacles with Southern fluid cell */
-		      if( ( Flag[ i ][ j ] & B_S ) == B_S ){
-			  V[ i ][ j-1 ] = 0; 
-			  U[ i ][ j ] = -U[ i ][ j-1 ];
-			  U[ i-1 ][ j ] = -U[ i-1 ][ j-1 ];
-		      }
-		      /* Boundary conditions for obstacles with Western fluid cell */
-		      if( ( Flag[ i ][ j ] & B_W ) == B_W ){
-			  U[ i-1 ][ j ] = 0; 
-			  V[ i ][ j ] = -V[ i-1 ][ j ];
-			  V[ i ][ j-1 ] = -V[ i-1 ][ j-1 ];
-		      }
-		      /* Boundary conditions for obstacles with Eastern fluid cell */
-		      if( ( Flag[ i ][ j ] & B_E ) == B_E ){
-			  U[ i ][ j ] = 0; 
-			  V[ i ][ j ] = -V[ i+1 ][ j ];
-			  V[ i ][ j-1 ] = -V[ i+1 ][ j-1 ];
-		      }
-		      
-		      /* Boundary conditions for obstacles with North-Eastern fluid cell */
-		      if( ( Flag[ i ][ j ] & B_NE ) == B_NE ){
-			  U[ i ][ j ] = 0; 
-			  V[ i ][ j ] = 0;
-			  U[ i-1 ][ j ] = -U[ i-1 ][ j+1 ];
-			  V[ i ][ j-1 ] = -V[ i+1 ][ j-1 ];
-		      }
-		      
-		      /* Boundary conditions for obstacles with North-Western fluid cell */
-		      if( ( Flag[ i ][ j ] & B_NW ) == B_NW ){
-			  U[ i-1 ][ j ] = 0; 
-			  V[ i ][ j ] = 0;
-			  U[ i ][ j ] = -U[ i ][ j+1 ];
-			  V[ i ][ j-1 ] = -V[ i-1 ][ j-1 ];
-		      }
-		      
-		      /* Boundary conditions for obstacles with South-Eastern fluid cell */
-		      if( ( Flag[ i ][ j ] & B_SE ) == B_SE ){
-			  U[ i ][ j ] = 0; 
-			  V[ i ][ j-1 ] = 0;
-			  U[ i-1 ][ j ] = -U[ i-1 ][ j-1 ];
-			  V[ i ][ j ] = -V[ i+1 ][ j ];
-		      }
-		      
-		      /* Boundary conditions for obstacles with South-Western fluid cell */
-		      if( ( Flag[ i ][ j ] & B_SW ) == B_SW ){
-			  U[ i-1 ][ j ] = 0; 
-			  V[ i ][ j-1 ] = 0;
-			  U[ i ][ j ] = -U[ i ][ j-1 ];
-			  V[ i ][ j ] = -V[ i-1 ][ j ];
-		      }
-		}
-	    }
-	}
+	for( i = 0; i <= imax; i++ )
+	  for( j = 0; j <= jmax; j++){
+	    if( imgDomain[ i+j*imax ] == 2 ){
+		U[i][j] = imgU[ i+j*imax ];
+		V[i][j] = imgV[ i+j*imax ];
+	  }
+      }
+  
+  
+// 	
+// 	int c, bound_now;
+// 
+// 	for( c = 0; c < 4; c++ ){
+// 		bound_now = b[c];
+// 		/* treating different cases of boundaries
+// 		 * inflow treated separately
+// 		 * */
+// 		switch(bound_now){
+// 		case 1: no_slip( imax, jmax, U, V, c);
+// 		break;
+// 		case 3: outflow( imax, jmax, U, V, c);
+// 		break;
+// 		default: free_slip( imax, jmax, U, V, c);
+// 		break;
+// 		}
+// 	}
+	
+// 	/* Boundary conditions for the obstacle cells */
+// 	for( i = 1; i <= imax; i++ ){
+// 	    for( j = 1; j <= jmax; j++ ){
+// 		if( Flag[i][j] < C_F ){
+// 		      /* Boundary conditions for obstacles with Northern fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_N ) == B_N ){
+// 			  V[ i ][ j ] = 0; 
+// 			  U[ i ][ j ] = -U[ i ][ j+1 ];
+// 			  U[ i-1 ][ j ] = -U[ i-1 ][ j+1 ];
+// 		      }
+// 		      /* Boundary conditions for obstacles with Southern fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_S ) == B_S ){
+// 			  V[ i ][ j-1 ] = 0; 
+// 			  U[ i ][ j ] = -U[ i ][ j-1 ];
+// 			  U[ i-1 ][ j ] = -U[ i-1 ][ j-1 ];
+// 		      }
+// 		      /* Boundary conditions for obstacles with Western fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_W ) == B_W ){
+// 			  U[ i-1 ][ j ] = 0; 
+// 			  V[ i ][ j ] = -V[ i-1 ][ j ];
+// 			  V[ i ][ j-1 ] = -V[ i-1 ][ j-1 ];
+// 		      }
+// 		      /* Boundary conditions for obstacles with Eastern fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_E ) == B_E ){
+// 			  U[ i ][ j ] = 0; 
+// 			  V[ i ][ j ] = -V[ i+1 ][ j ];
+// 			  V[ i ][ j-1 ] = -V[ i+1 ][ j-1 ];
+// 		      }
+// 		      
+// 		      /* Boundary conditions for obstacles with North-Eastern fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_NE ) == B_NE ){
+// 			  U[ i ][ j ] = 0; 
+// 			  V[ i ][ j ] = 0;
+// 			  U[ i-1 ][ j ] = -U[ i-1 ][ j+1 ];
+// 			  V[ i ][ j-1 ] = -V[ i+1 ][ j-1 ];
+// 		      }
+// 		      
+// 		      /* Boundary conditions for obstacles with North-Western fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_NW ) == B_NW ){
+// 			  U[ i-1 ][ j ] = 0; 
+// 			  V[ i ][ j ] = 0;
+// 			  U[ i ][ j ] = -U[ i ][ j+1 ];
+// 			  V[ i ][ j-1 ] = -V[ i-1 ][ j-1 ];
+// 		      }
+// 		      
+// 		      /* Boundary conditions for obstacles with South-Eastern fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_SE ) == B_SE ){
+// 			  U[ i ][ j ] = 0; 
+// 			  V[ i ][ j-1 ] = 0;
+// 			  U[ i-1 ][ j ] = -U[ i-1 ][ j-1 ];
+// 			  V[ i ][ j ] = -V[ i+1 ][ j ];
+// 		      }
+// 		      
+// 		      /* Boundary conditions for obstacles with South-Western fluid cell */
+// 		      if( ( Flag[ i ][ j ] & B_SW ) == B_SW ){
+// 			  U[ i-1 ][ j ] = 0; 
+// 			  V[ i ][ j-1 ] = 0;
+// 			  U[ i ][ j ] = -U[ i ][ j-1 ];
+// 			  V[ i ][ j ] = -V[ i-1 ][ j ];
+// 		      }
+// 		}
+// 	    }
+// 	}
 }
 
 

@@ -307,8 +307,8 @@ int mainCFD(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 	G = matrix ( 0 , imax , 0 , jmax );
 	RS = matrix ( 0 , imax , 0 , jmax );
 
-	init_flag( problem, imax, jmax, &fluid_cells, Flag );
-	init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
+	init_flag( problem, imax, jmax, &fluid_cells, Flag, imgDomain );
+	//init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
 
 	t=.0;
 	n=0;
@@ -316,8 +316,18 @@ int mainCFD(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 
 	while( t <= t_end ){
 		if( tau > 0 ) calculate_dt(Re, tau, &dt, dx, dy, imax, jmax, U, V);
-
-		boundaryvalues( imax, jmax, U, V, boundaries, Flag );
+// void boundaryvalues(
+//   int imax,
+//   int jmax,
+//   double **U,
+//   double **V,
+//   int *b, 
+//   int **Flag, 
+//   float imgU, 
+//   float imgV, 
+//   int imgDomain
+//  		  )
+		boundaryvalues( imax, jmax, U, V, boundaries, Flag, imgU, imgV, imgDomain );
 		/* special inflow boundaries */
 		spec_boundary_val( problem, imax, jmax, U, V, Re, dp, ylength);
 
@@ -491,7 +501,7 @@ int main(int argc, char **argv)
     while (cv::waitKey(30) < 0)
     {
     // Get camera image
-    camera >> mIn;
+    camera >> mIn;convert_layered_to_mat_int
     // convert to float representation (opencv loads image values as single bytes by default)
     mIn.convertTo(mIn,CV_32F);
     // convert range of each channel to [0,1] (opencv default is [0,255])

@@ -72,10 +72,6 @@ void convert_layered_to_mat(cv::Mat &mOut, const float *aIn)
     convert_layered_to_interleaved((float*)mOut.data, aIn, mOut.cols, mOut.rows, mOut.channels());
 }
 
-void convert_layered_to_mat_int(cv::Mat &mOut, const int *aIn)
-{
-    convert_layered_to_interleaved((int*)mOut.data, aIn, mOut.cols, mOut.rows, mOut.channels());
-}
 
 void convert_interleaved_to_layered(float *aOut, const float *aIn, int w, int h, int nc)
 {

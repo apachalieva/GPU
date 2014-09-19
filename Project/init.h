@@ -81,7 +81,7 @@ void init_uvp(
   char* problem
 );
 
-void init_flag( const char *problem, const int imax, const int jmax, int *fluid_cells, int **Flag );
+void init_flag( const char *problem, const int imax, const int jmax, int *fluid_cells, int **Flag, int *imgDomain );
 
 #endif
 

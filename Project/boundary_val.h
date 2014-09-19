@@ -11,7 +11,10 @@ void boundaryvalues(
   double **U,
   double **V,
   int *boundrs,		/* vector representing different types of boundaries */
-  int **Flag		/* Flag field, describing the geometry of the problem */
+  int **Flag,		/* Flag field, describing the geometry of the problem */
+  float *imgU, 
+  float *imgV, 
+  int *imgDomain
 );
 
 /* fuction for

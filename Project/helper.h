@@ -31,7 +31,8 @@ extern clock_t last_timer_reset;
  * Cell definitions
  */
 /* Fluid cell */ 
-#define C_F	16
+// #define C_F	16
+#define C_F	1
 /* Obstacle cell */
 #define C_B	0
 

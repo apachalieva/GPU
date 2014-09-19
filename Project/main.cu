@@ -149,7 +149,7 @@ __device__ float cuda_div_x(float a, float b, int x, int w)
 		}
 		else
 		{
-			return 0.;convert_layered_to_mat_int
+			return 0.;
 		}
 }
 
@@ -161,7 +161,7 @@ __device__ float cuda_div_y(float a, float b, int y, int h)
 			return (a - b);
 		}
 		else if (y+1<h)
-		{convert_layered_to_mat_int
+		{
 			return (a - 0);
 		}
 		else if (y>0)
@@ -185,7 +185,7 @@ __global__ void global_div(float *v1, float *v2, float *imgOut, int w, int h, in
 	y = (ind - ch*w*h) / (int)w;
 	x = (ind - ch*w*h) % (int)w;
 
-	if ((ind<n) && (ind-w>=0) && (ind-1>convert_layered_to_mat_int=0)) 
+	if ((ind<n) && (ind-w>=0) && (ind-1>=0)) 
 	{ 	
 		imgOut[ind] = cuda_div_x(v1[ind], v1[ind-1], x, w) + cuda_div_y(v2[ind], v2[ind-w], y, h);
 	}
@@ -203,7 +203,7 @@ __global__ void global_norm(float *imgIn, float *imgOut, int w, int h, int n)
 		imgOut[ind] = imgIn[ind]*imgIn[ind];
 		imgOut[ind] += imgIn[ind+w*h]*imgIn[ind+w*h];
 		imgOut[ind] += imgIn[ind+2*w*h]*imgIn[ind+2*w*h];
-		imgOut[ind] = sqrtf(imgOut[iconvert_layered_to_mat_intnd]);
+		imgOut[ind] = sqrtf(imgOut[ind]);
 	}
 }
 
@@ -307,8 +307,8 @@ int mainCFD(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 	G = matrix ( 0 , imax , 0 , jmax );
 	RS = matrix ( 0 , imax , 0 , jmax );
 
-	init_flag( problem, imax, jmax, &fluid_cells, Flag );
-	init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
+	init_flag( problem, imax, jmax, &fluid_cells, Flag, imgDomain );
+	//init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
 
 	t=.0;
 	n=0;
@@ -316,8 +316,18 @@ int mainCFD(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 
 	while( t <= t_end ){
 		if( tau > 0 ) calculate_dt(Re, tau, &dt, dx, dy, imax, jmax, U, V);
-
-		boundaryvalues( imax, jmax, U, V, boundaries, Flag );
+// void boundaryvalues(
+//   int imax,
+//   int jmax,
+//   double **U,
+//   double **V,
+//   int *b, 
+//   int **Flag, 
+//   float imgU, 
+//   float imgV, 
+//   int imgDomain
+//  		  )
+		boundaryvalues( imax, jmax, U, V, boundaries, Flag, imgU, imgV, imgDomain );
 		/* special inflow boundaries */
 		spec_boundary_val( problem, imax, jmax, U, V, Re, dp, ylength);
 
@@ -681,7 +691,7 @@ int main(int argc, char **argv)
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
 
     // show output image: first convert to interleaved opencv format from the layered raw array
-    convert_layered_to_mat_int(mOut, imgDomain);
+    convert_layered_to_mat(mOut, imgOut);
     showImage("Output1", mOut, 100+w+40, 100);
 
 

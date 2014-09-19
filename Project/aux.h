@@ -55,7 +55,6 @@ bool getParam(std::string param, T &var, int argc, char **argv)
 // opencv helpers
 void convert_mat_to_layered(float *aOut, const cv::Mat &mIn);
 void convert_layered_to_mat(cv::Mat &mOut, const float *aIn);
-void convert_layered_to_mat_int(cv::Mat &mOut, const int *aIn);
 void showImage(std::string title, const cv::Mat &mat, int x, int y);
 
 
