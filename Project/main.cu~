@@ -1,9 +1,11 @@
-#include "helper.h"
-#include "visual.h"
-#include "init.h"
-#include "uvp.h"
-#include "boundary_val.h"
-#include "sor.h"
+extern "C"{
+    #include "helper.h"
+    #include "visual.h"
+    #include "init.h"
+    #include "uvp.h"
+    #include "boundary_val.h"
+    #include "sor.h"
+}
 #include <stdio.h>
 #include <string.h>
 
@@ -666,6 +668,8 @@ int main(int argc, char **argv)
     timer.end();  float t = timer.get();  // elapsed time in seconds
     cout << "time: " << t*1000 << " ms" << endl;
 
+
+	mainCFD(argc, argv);
 
 
     // show input image

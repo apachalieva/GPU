@@ -1,9 +1,11 @@
-#include "helper.h"
-#include "visual.h"
-#include "init.h"
-#include "uvp.h"
-#include "boundary_val.h"
-#include "sor.h"
+extern "C"{
+    #include "helper.h"
+    #include "visual.h"
+    #include "init.h"
+    #include "uvp.h"
+    #include "boundary_val.h"
+    #include "sor.h"
+}
 #include <stdio.h>
 #include <string.h>
 
