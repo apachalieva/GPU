@@ -149,7 +149,7 @@ __device__ float cuda_div_x(float a, float b, int x, int w)
 		}
 		else
 		{
-			return 0.;
+			return 0.;convert_layered_to_mat_int
 		}
 }
 
@@ -161,7 +161,7 @@ __device__ float cuda_div_y(float a, float b, int y, int h)
 			return (a - b);
 		}
 		else if (y+1<h)
-		{
+		{convert_layered_to_mat_int
 			return (a - 0);
 		}
 		else if (y>0)
@@ -185,7 +185,7 @@ __global__ void global_div(float *v1, float *v2, float *imgOut, int w, int h, in
 	y = (ind - ch*w*h) / (int)w;
 	x = (ind - ch*w*h) % (int)w;
 
-	if ((ind<n) && (ind-w>=0) && (ind-1>=0)) 
+	if ((ind<n) && (ind-w>=0) && (ind-1>convert_layered_to_mat_int=0)) 
 	{ 	
 		imgOut[ind] = cuda_div_x(v1[ind], v1[ind-1], x, w) + cuda_div_y(v2[ind], v2[ind-w], y, h);
 	}
@@ -203,7 +203,7 @@ __global__ void global_norm(float *imgIn, float *imgOut, int w, int h, int n)
 		imgOut[ind] = imgIn[ind]*imgIn[ind];
 		imgOut[ind] += imgIn[ind+w*h]*imgIn[ind+w*h];
 		imgOut[ind] += imgIn[ind+2*w*h]*imgIn[ind+2*w*h];
-		imgOut[ind] = sqrtf(imgOut[ind]);
+		imgOut[ind] = sqrtf(imgOut[iconvert_layered_to_mat_intnd]);
 	}
 }
 
@@ -491,7 +491,7 @@ int main(int argc, char **argv)
     while (cv::waitKey(30) < 0)
     {
     // Get camera image
-    camera >> mIn;
+    camera >> mIn;convert_layered_to_mat_int
     // convert to float representation (opencv loads image values as single bytes by default)
     mIn.convertTo(mIn,CV_32F);
     // convert range of each channel to [0,1] (opencv default is [0,255])
@@ -681,7 +681,7 @@ int main(int argc, char **argv)
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
 
     // show output image: first convert to interleaved opencv format from the layered raw array
-    convert_layered_to_mat(mOut, imgOut);
+    convert_layered_to_mat_int(mOut, imgDomain);
     showImage("Output1", mOut, 100+w+40, 100);
 
 
