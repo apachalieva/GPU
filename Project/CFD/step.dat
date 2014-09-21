@@ -54,21 +54,6 @@ UI		0.0
 VI		0.0
 
 #--------------------------------------------
-#       boundaries
-# 		types of boundary:
-#		1: no-slip
-#		2: free slip (default, for numbers different from 1, or 3)
-#		3: outflow
-#		inflow boundaries are set accordingly to the problem 
-#		(see problem, down)
-#--------------------------------------------
-
-wl		3
-wr 		3
-wb		1
-wt		1
-
-#--------------------------------------------
 #       dp
 #--------------------------------------------
 dp		4.0

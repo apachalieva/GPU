@@ -1,7 +1,6 @@
 //======================================================================================================================================================
 //==============================================================CFD CODE================================================================================
 
-// //extern "C"{
     #include "cfd.h"
     #include "helper.h"
     #include "visual.h"
@@ -9,16 +8,7 @@
     #include "uvp.h"
     #include "boundary_val.h"
     #include "sor.h"
-// //}
-// #include <stdio.h>
-// #include <string.h>
-// 
-// #define PARAMF "cavity.dat"
-// #define VISUAF "visual/sim"
-// 
-// #define OBSTACLE 0
-// #define FLUID 1
-// #define INFLOW 2
+
 
 /**
  * The main operation reads the configuration file, initializes the scenario and
@@ -55,22 +45,21 @@
  */
 
 int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
-	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res,dp;
+	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res, dp;
 	double **U, **V, **P, **F, **G, **RS;
 	int n, step, it, imax, jmax, itermax, pb;
 	int fluid_cells;		/* Number of fluid cells in our geometry */
 	char problem[10];		/* Problem name, file name */
-	int boundaries[4];
 	char *fname;
 
 	int **Flag;			/* Flagflield matrix */
 
-	if(argc>=2)
-		fname=args[1];
+	if( argc >= 2 )
+		fname = args[1];
 	else
 		fname = PARAMF;
 
-	read_parameters(fname, &Re, &UI, &VI, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, &imax, &jmax, &alpha, &omg, &tau, &itermax, &eps, &dt_value, boundaries, &dp, &pb);
+	read_parameters(fname, &Re, &UI, &VI, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, &imax, &jmax, &alpha, &omg, &tau, &itermax, &eps, &dt_value, &dp, &pb);
 	/* setting of the problem */
 	switch (pb){
 		case 0:	strcpy(problem,"karman");
@@ -81,7 +70,6 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 		break;
 		default: strcpy(problem,"none");
 		}
-
 
 	fluid_cells = imax*jmax;
 
@@ -98,18 +86,15 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 	RS = matrix ( 0 , imax , 0 , jmax );
 
 	init_flag( problem, imax, jmax, &fluid_cells, Flag, imgDomain );
-	//init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
 
-	t=.0;
-	n=0;
-	step=0;
+	t = .0;
+	n = 0;
+	step = 0;
 
 	while( t <= t_end ){
 		if( tau > 0 ) calculate_dt(Re, tau, &dt, dx, dy, imax, jmax, U, V);
 
-		boundaryvalues( imax, jmax, U, V, boundaries, Flag, imgU, imgV, imgDomain );
-		/* special inflow boundaries */
-		spec_boundary_val( problem, imax, jmax, U, V, Re, dp, ylength);
+		boundaryvalues( imax, jmax, U, V, imgU, imgV, Flag );
 
 		/* calculate new values for F and G */
 		calculate_fg( Re, GX, GY, alpha, dt, dx, dy, imax, jmax, U, V, F, G, Flag );
@@ -138,7 +123,6 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 			write_vtkFile( VISUAF, n, xlength, ylength, imax, jmax, dx, dy, U, V, P );
 			step++;
 		}
-
 	}
 
 	printf("Problem: %s\n", problem );
@@ -146,15 +130,14 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 	printf( "Number of fluid cells = %d\n", fluid_cells );
 	printf( "Reynolds number: %f\n", Re);
 
-
 	/* free memory */
-	free_matrix(U,0,imax+1,0,jmax+1);
-	free_matrix(V,0,imax+1,0,jmax+1);
-	free_matrix(P,0,imax+1,0,jmax+1);
+	free_matrix( U, 0, imax+1, 0, jmax+1 );
+	free_matrix( V, 0, imax+1, 0, jmax+1 );
+	free_matrix( P, 0, imax+1, 0, jmax+1 );
 
-	free_matrix(F,0,imax,0,jmax);
-	free_matrix(G,0,imax,0,jmax);
-	free_matrix(RS,0,imax,0,jmax);
+	free_matrix( F, 0, imax, 0, jmax );
+	free_matrix( G, 0, imax, 0, jmax );
+	free_matrix( RS, 0, imax, 0, jmax );
 
 	free_imatrix( Flag, 0, imax+1, 0, jmax+1 );
 

@@ -184,26 +184,19 @@ int main(int argc, char **argv)
 	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_U, *gpu_V;
 	int *gpu_Domain;
 
-	cudaMalloc(&gpu_In, n*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_v1, n*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_v2, n*sizeof(float));
-	CUDA_CHECK;
+	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_v1, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_v2, n*sizeof(float));CUDA_CHECK;
+	
 	// TODO: Temporarly we consider just a grayscale inpainting
-	cudaMalloc(&gpu_U, w*h*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_V, w*h*sizeof(float));
-	CUDA_CHECK;
+	cudaMalloc(&gpu_U, w*h*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_V, w*h*sizeof(float));CUDA_CHECK;
 
 
 	// copy host memory to device
-	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
-	cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
-	cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
+	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 	// launch kernel
 	dim3 block = dim3(128,1,1);
@@ -214,26 +207,17 @@ int main(int argc, char **argv)
 	global_norm <<<grid,block>>> (gpu_v2, gpu_U, w, h, w*h);
 
 	// copy result back to host (CPU) memory
-	cudaMemcpy(v1, gpu_v1, n * sizeof(float), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
-	cudaMemcpy(v2, gpu_v2, n * sizeof(float), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
-	cudaMemcpy(imgU, gpu_U, w*h * sizeof(float), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
-	cudaMemcpy(imgV, gpu_V, w*h * sizeof(float), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
+	cudaMemcpy( v1, gpu_v1, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+	cudaMemcpy( v2, gpu_v2, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+	cudaMemcpy( imgU, gpu_U, w*h * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+	cudaMemcpy( imgV, gpu_V, w*h * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
 	// free device (GPU) memory
-	cudaFree(gpu_In);
-	CUDA_CHECK;
-	cudaFree(gpu_v1);
-	CUDA_CHECK;
-	cudaFree(gpu_v2);
-	CUDA_CHECK;
-	cudaFree(gpu_U);
-	CUDA_CHECK;
-	cudaFree(gpu_V);
-	CUDA_CHECK;
+	cudaFree(gpu_In);CUDA_CHECK;
+	cudaFree(gpu_v1);CUDA_CHECK;
+	cudaFree(gpu_v2);CUDA_CHECK;
+	cudaFree(gpu_U);CUDA_CHECK;
+	cudaFree(gpu_V);CUDA_CHECK;
 
 	// Invert the V values according t: V = -dI/dx
 	// TODO: Temporarly we consider just a grayscale inpainting 
@@ -241,105 +225,74 @@ int main(int argc, char **argv)
 	{
 		imgV[i] = -imgV[i];
 	}
-
 	
 	// Calculate divergence of a gradient
 
-	cudaMalloc(&gpu_v1, n*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_v2, n*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_Out, n*sizeof(float));
-	CUDA_CHECK;
+	cudaMalloc(&gpu_v1, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_v2, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_Out, n*sizeof(float));CUDA_CHECK;
 
 	// copy host memory to device
-	cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
-	cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
-	cudaMemcpy(gpu_Out, imgOut, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
+	cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_Out, imgOut, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 	// launch kernel
 	global_div <<<grid,block>>> (gpu_v1, gpu_v2, gpu_Out, w, h, nc, n);
 
 	// copy result back to host (CPU) memory
-	cudaMemcpy(imgOut, gpu_Out, n * sizeof(float), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
+	cudaMemcpy(imgOut, gpu_Out, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
 	// free device (GPU) memory
-	cudaFree(gpu_v1);
-	CUDA_CHECK;
-	cudaFree(gpu_v2);
-	CUDA_CHECK;
-	cudaFree(gpu_Out);
-	CUDA_CHECK;
-
+	cudaFree(gpu_v1);CUDA_CHECK;
+	cudaFree(gpu_v2);CUDA_CHECK;
+	cudaFree(gpu_Out);CUDA_CHECK;
 
 	// Calculate norm	
 	// allocate GPU memory
 
-	cudaMalloc(&gpu_In, n*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_Vorticity, n2*sizeof(float));
-	CUDA_CHECK;
+	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_Vorticity, n2*sizeof(float));CUDA_CHECK;
 
 	// copy host memory to device
-	cudaMemcpy(gpu_In, imgOut, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
-	cudaMemcpy(gpu_Vorticity, imgVorticity, n2*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
+	cudaMemcpy(gpu_In, imgOut, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_Vorticity, imgVorticity, n2*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 	// launch kernel
 	global_norm <<<grid,block>>> (gpu_In, gpu_Vorticity, w, h, n2);
 
 	// copy result back to host (CPU) memory
-	cudaMemcpy(imgVorticity, gpu_Vorticity, n2 * sizeof(float), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
+	cudaMemcpy(imgVorticity, gpu_Vorticity, n2 * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
 	// free device (GPU) memory
-	cudaFree(gpu_In);
-	CUDA_CHECK;
-	cudaFree(gpu_Vorticity);
-	CUDA_CHECK;
-
-
+	cudaFree(gpu_In);CUDA_CHECK;
+	cudaFree(gpu_Vorticity);CUDA_CHECK;
 
 	// Calculate the inpainting domain	
 	// allocate GPU memory
 
-	cudaMalloc(&gpu_In, n*sizeof(float));
-	CUDA_CHECK;
-	cudaMalloc(&gpu_Domain, w*h*sizeof(int));
-	CUDA_CHECK;
+	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_Domain, w*h*sizeof(int));CUDA_CHECK;
 
 	// copy host memory to device
-	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
-	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);
-	CUDA_CHECK;
+	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 	// launch kernel
 	global_detect_domain <<<grid,block>>> (gpu_In, gpu_Domain, w, h, w*h);
 
 	// copy result back to host (CPU) memory
-	cudaMemcpy(imgDomain, gpu_Domain, w*h * sizeof(int), cudaMemcpyDeviceToHost );
-	CUDA_CHECK;
+	cudaMemcpy(imgDomain, gpu_Domain, w*h * sizeof(int), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
 	// free device (GPU) memory
-	cudaFree(gpu_In);
-	CUDA_CHECK;
-	cudaFree(gpu_Domain);
-	CUDA_CHECK;
-
-
+	cudaFree(gpu_In);CUDA_CHECK;
+	cudaFree(gpu_Domain);CUDA_CHECK;
 
     timer.end();  float t = timer.get();  // elapsed time in seconds
     cout << "time: " << t*1000 << " ms" << endl;
 
 // CFD solver
 	cfd(argc, argv, imgU, imgV, imgDomain);
-
 
     // show input image
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
@@ -348,9 +301,7 @@ int main(int argc, char **argv)
     convert_layered_to_mat(mOut, imgOut);
     showImage("Output1", mOut, 100+w+40, 100);
 
-
     // ### Display your own output images here as needed
-
 #ifdef CAMERA
     // end of camera loop
     }
@@ -358,9 +309,6 @@ int main(int argc, char **argv)
     // wait for key inputs
     cv::waitKey(0);
 #endif
-
-
-
 
     // save input and result
     cv::imwrite("image_input.png",mIn*255.f);  // "imwrite" assumes channel range [0,255]
@@ -377,6 +325,7 @@ int main(int argc, char **argv)
     cvDestroyAllWindows();
     return 0;
 }
+
 
 
 
