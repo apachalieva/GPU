@@ -1,14 +1,24 @@
-#include "helper.h"
-#include "visual.h"
-#include "init.h"
-#include "uvp.h"
-#include "boundary_val.h"
-#include "sor.h"
-#include <stdio.h>
-#include <string.h>
+//======================================================================================================================================================
+//==============================================================CFD CODE================================================================================
 
-#define PARAMF "cavity.dat"
-#define VISUAF "visual/sim"
+// //extern "C"{
+    #include "cfd.h"
+    #include "helper.h"
+    #include "visual.h"
+    #include "init.h"
+    #include "uvp.h"
+    #include "boundary_val.h"
+    #include "sor.h"
+// //}
+// #include <stdio.h>
+// #include <string.h>
+// 
+// #define PARAMF "cavity.dat"
+// #define VISUAF "visual/sim"
+// 
+// #define OBSTACLE 0
+// #define FLUID 1
+// #define INFLOW 2
 
 /**
  * The main operation reads the configuration file, initializes the scenario and
@@ -43,7 +53,8 @@
  *   iteration loop the operation sor() is used.
  * - calculate_uv() Calculate the velocity at the next time step.
  */
-int main(int argc, char** args){
+
+int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain){
 	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res,dp;
 	double **U, **V, **P, **F, **G, **RS;
 	int n, step, it, imax, jmax, itermax, pb;
@@ -86,8 +97,8 @@ int main(int argc, char** args){
 	G = matrix ( 0 , imax , 0 , jmax );
 	RS = matrix ( 0 , imax , 0 , jmax );
 
-	init_flag( problem, imax, jmax, &fluid_cells, Flag );
-	init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
+	init_flag( problem, imax, jmax, &fluid_cells, Flag, imgDomain );
+	//init_uvp(UI, VI, PI, imax, jmax, U, V, P, Flag, problem);
 
 	t=.0;
 	n=0;
@@ -96,7 +107,7 @@ int main(int argc, char** args){
 	while( t <= t_end ){
 		if( tau > 0 ) calculate_dt(Re, tau, &dt, dx, dy, imax, jmax, U, V);
 
-		boundaryvalues( imax, jmax, U, V, boundaries, Flag );
+		boundaryvalues( imax, jmax, U, V, boundaries, Flag, imgU, imgV, imgDomain );
 		/* special inflow boundaries */
 		spec_boundary_val( problem, imax, jmax, U, V, Re, dp, ylength);
 
@@ -149,3 +160,5 @@ int main(int argc, char** args){
 
 	return 0;
 }
+
+//======================================================================================================================================================

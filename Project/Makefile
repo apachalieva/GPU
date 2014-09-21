@@ -1,3 +1,3 @@
-main: main.cu aux.cu aux.h helper.c helper.h init.c init.h boundary_val.c boundary_val.h uvp.c uvp.h visual.c visual.h sor.c sor.h Makefile
-	nvcc -o main main.cu aux.cu helper.c init.c boundary_val.c uvp.c visual.c sor.c --ptxas-options=-v --use_fast_math --compiler-options -Wall -lopencv_highgui -lopencv_core
+main: main.cu aux.cu aux.h functionalities.cu functionalities.h CFD/cfd.c CFD/cfd.h CFD/helper.c CFD/helper.h CFD/init.c CFD/init.h CFD/boundary_val.c CFD/boundary_val.h CFD/uvp.c CFD/uvp.h CFD/visual.c CFD/visual.h CFD/sor.c CFD/sor.h Makefile
+	nvcc -o main main.cu aux.cu functionalities.cu CFD/cfd.c CFD/helper.c CFD/init.c CFD/boundary_val.c CFD/uvp.c CFD/visual.c CFD/sor.c --ptxas-options=-v --use_fast_math --compiler-options -Wall -lopencv_highgui -lopencv_core
 
