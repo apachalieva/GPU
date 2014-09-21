@@ -144,3 +144,73 @@ void cuda_check(string file, int line)
     prev_file = file;
     prev_line = line;
 }
+
+// Color transformation
+// source : http://linuxtv.org/downloads/v4l-dvb-apis/colorspaces.html
+int clamp (double x)
+{
+    int r = x;      /* round to nearest */
+	
+    if (r < 0)         return 0;
+    else if (r > 255)  return 255;
+    else               return r;
+}
+
+void forwared_color_transf( float *imgRGB, float *imgChrom, int w, int h, int nc )
+{
+    //int ER, EG, EB;         /* gamma corrected RGB input [0;255] */
+    //int Y1, Cb, Cr;         /* output [0;255] */
+
+    double r, g, b;         /* temporaries */
+    double y1, pb, pr;
+    for( int i = 0; i < w; i++ ){
+      for( int j = 0; j < h; j++ ){
+	//for( int channel; channel < nc; channel++ ){
+	  r = imgRGB[ i + j*w + w*h*0 ] / 255.0;	// 	  r = ER / 255.0;
+	  g = imgRGB[ i + j*w + w*h*1 ] / 255.0; 	// 	  g = EG / 255.0;
+	  b = imgRGB[ i + j*w + w*h*2 ] / 255.0;	// 	  b = EB / 255.0;
+
+	  y1  =  0.299  * r + 0.587 * g + 0.114  * b;
+	  pb  = -0.169  * r - 0.331 * g + 0.5    * b;
+	  pr  =  0.5    * r - 0.419 * g - 0.081  * b;
+
+	  imgChrom[i + j*w + w*h*0] = clamp (219 * y1 + 16);		// 	  Y1 = clamp (219 * y1 + 16);
+	  imgChrom[i + j*w + w*h*1] = clamp (224 * pb + 128);		// 	  Cb = clamp (224 * pb + 128);
+	  imgChrom[i + j*w + w*h*2] = clamp (224 * pr + 128);		// 	  Cr = clamp (224 * pr + 128);
+
+	  /* or shorter */
+
+	  // y1 = 0.299 * ER + 0.587 * EG + 0.114 * EB;
+	  // 
+	  // Y1 = clamp ( (219 / 255.0)                    *       y1  + 16);
+	  // Cb = clamp (((224 / 255.0) / (2 - 2 * 0.114)) * (EB - y1) + 128);
+	  // Cr = clamp (((224 / 255.0) / (2 - 2 * 0.299)) * (ER - y1) + 128);
+	//}
+      }
+    }
+}     
+
+//Inverse Transformation
+void inverse_color_transf( float *imgChrom, float *imgRGB, int w, int h, int nc )
+{
+    //int Y1, Cb, Cr;         /* gamma pre-corrected input [0;255] */
+    //int ER, EG, EB;         /* output [0;255] */
+
+    double r, g, b;         /* temporaries */
+    double y1, pb, pr;
+    for( int i = 0; i < w; i++ ){
+      for( int j = 0; j < h; j++ ){
+	y1 = ( imgChrom[i + j*w + w*h*0] - 16)  / 219.0;	//     y1 = (Y1 - 16)  / 219.0;
+	pb = ( imgChrom[i + j*w + w*h*0] - 128) / 224.0;	//     pb = (Cb - 128) / 224.0;
+	pr = ( imgChrom[i + j*w + w*h*0] - 128) / 224.0;	//     pr = (Cr - 128) / 224.0;
+
+	r = 1.0 * y1 + 0     * pb + 1.402 * pr;
+	g = 1.0 * y1 - 0.344 * pb - 0.714 * pr;
+	b = 1.0 * y1 + 1.772 * pb + 0     * pr;
+
+	imgRGB[ i + j*w + w*h*0 ] = clamp (r * 255);	//     ER = clamp (r * 255); /* [ok? one should prob. limit y1,pb,pr] */
+	imgRGB[ i + j*w + w*h*0 ] = clamp (g * 255);	//     EG = clamp (g * 255);
+	imgRGB[ i + j*w + w*h*0 ] = clamp (b * 255);	//     EB = clamp (b * 255);
+      }
+    }
+}

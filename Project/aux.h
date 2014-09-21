@@ -50,8 +50,6 @@ bool getParam(std::string param, T &var, int argc, char **argv)
 }
 
 
-
-
 // opencv helpers
 void convert_mat_to_layered(float *aOut, const cv::Mat &mIn);
 void convert_layered_to_mat(cv::Mat &mOut, const float *aIn);
@@ -62,7 +60,6 @@ void showImage(std::string title, const cv::Mat &mat, int x, int y);
 
 // adding Gaussian noise
 void addNoise(cv::Mat &m, float sigma);
-
 
 
 
@@ -105,5 +102,9 @@ class Timer
 void cuda_check(std::string file, int line);
 
 
+// Color transformation 
+int clamp( double x );
+void forwared_color_transf( float *imgRGB, float *imgChrom, int w, int h, int nc );
+void inverse_color_transf( float *imgChrom, float *imgRGB, int w, int h, int nc );
 
 #endif  // AUX_H

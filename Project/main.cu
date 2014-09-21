@@ -26,7 +26,6 @@ extern "C"{
     #include "CFD/cfd.h"
 }
 
-
 #include "aux.h"
 #include "functionalities.h"
 #include <iostream>
