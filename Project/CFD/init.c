@@ -56,6 +56,19 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
 }
 
 
+void init_uv( int imax, int jmax, double **U, double **V, float *imgU, float *imgV, int **Flag ){
+  int i, j;
+  for( i = 0; i <= imax; i++ ){
+    for( j = 0; j <= jmax; j++ ){
+      if( Flag[i][j] == 1 ){
+	U[i][j] = imgU[i+j*imax];
+	V[i][j] = imgV[i+j*imax];
+      }
+    }
+  }
+}
+
+
 void init_flag( const int imax, const int jmax, int **Flag, int *imgDomain ){
 	
   int i, j;

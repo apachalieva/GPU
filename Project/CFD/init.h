@@ -64,6 +64,15 @@ int read_parameters( const char *szFileName,       /* name of the file 		 	*/
                      double *dp		     /* dp/dx gradient of pressure 	*/
 		   );
 
+void init_uv( int imax, 
+	      int jmax, 
+	      double **U, 
+	      double **V, 
+	      float *imgU, 
+	      float *imgV, 
+	      int **Flag 
+	    );
+
 void init_flag( const int  imax, 
 		 const int  jmax, 
 		 int        **Flag, 

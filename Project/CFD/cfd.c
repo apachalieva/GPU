@@ -59,7 +59,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 		fname = PARAMF;
 
 	read_parameters(fname, &Re, &UI, &VI, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, imax, jmax, &alpha, &omg, &tau, &itermax, &eps, &dt_value, &dp );
-
+	
 	fluid_cells = imax*jmax;
 
 	/* Allocate Flag matrix */
@@ -75,7 +75,8 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	RS = matrix ( 0 , imax , 0 , jmax );
 
 	init_flag( imax, jmax, Flag, imgDomain );
-
+	init_uv( imax, jmax, U, V, imgU, imgV, Flag );
+	
 	t = .0;
 	n = 0;
 	step = 0;

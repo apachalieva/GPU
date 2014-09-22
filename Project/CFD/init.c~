@@ -26,9 +26,6 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
                      double *dp		   /* dp/dx gradient of pressure 	*/
 		  )
 {
-//    READ_DOUBLE( szFileName, *xlength );
-//    READ_DOUBLE( szFileName, *ylength );
-
    READ_DOUBLE( szFileName, *Re    );
    READ_DOUBLE( szFileName, *t_end );
    READ_DOUBLE( szFileName, *dt    );
@@ -56,6 +53,19 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    *dy = *ylength / (double)(jmax);
 
    return 1;
+}
+
+
+void init_uv( int imax, int jmax, double **U, double **V, double *imgU, double *imgV, int **Flag ){
+  int i, j;
+  for( i = 0; i <= imax; i++ ){
+    for( j = 0; j <= jmax; j++ ){
+      if( Flag[i][j] == 1 ){
+	U[i][j] = imgU[i+j*imax];
+	V[i][j] = imgV[i+j*imax];
+      }
+    }
+  }
 }
 
 
