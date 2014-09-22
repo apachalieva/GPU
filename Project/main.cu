@@ -79,6 +79,10 @@ int main(int argc, char **argv)
     if (!ret) cerr << "ERROR: no image specified" << endl;
     if (argc <= 1) { cout << "Usage: " << argv[0] << " -mask <mask>" << endl; return 1; }  
 
+    int iter = 100;
+    getParam("iter", iter, argc, argv);
+    cout << "iter: " << iter << endl;
+
 
 
 
@@ -201,7 +205,7 @@ int main(int argc, char **argv)
 	// Calculate gradient
 
 	// allocate GPU memory
-	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_U, *gpu_V, *gpu_Mask;
+	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_U, *gpu_V, *gpu_Mask, *gpu_In2;
 	int *gpu_Domain;
 
 	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
@@ -246,6 +250,7 @@ int main(int argc, char **argv)
 		imgV[i] = -imgV[i];
 	}
 	
+/*
 	// Calculate divergence of a gradient
 
 	cudaMalloc(&gpu_v1, n*sizeof(float));CUDA_CHECK;
@@ -288,6 +293,8 @@ int main(int argc, char **argv)
 	cudaFree(gpu_In);CUDA_CHECK;
 	cudaFree(gpu_Vorticity);CUDA_CHECK;
 
+*/
+
 	// Calculate the inpainting domain	
 	// allocate GPU memory
 
@@ -311,15 +318,69 @@ int main(int argc, char **argv)
     timer.end();  float t = timer.get();  // elapsed time in seconds
     cout << "time: " << t*1000 << " ms" << endl;
 
-	// TODO: Introduced temporarily	
-	for (int i=0; i<=w*h; i++)
-	{
-	imgOut[i] = (float)imgDomain[i]/2.0;
-	}
-
 
     // CFD solver
-    cfd( argc, argv, imgU, imgV, imgDomain, w, h );
+    //cfd( argc, argv, imgU, imgV, imgDomain, w, h );
+
+
+	// Calculate vorticity	
+	// allocate GPU memory
+
+	cudaMalloc(&gpu_U, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_V, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_Vorticity, n*sizeof(float));CUDA_CHECK;
+
+	// copy host memory to device
+	cudaMemcpy(gpu_U, imgU, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_V, imgV, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+
+	// launch kernel
+	global_vorticity <<<grid,block>>> (gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n);
+
+	// copy result back to host (CPU) memory
+	cudaMemcpy(imgVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+
+	// free device (GPU) memory
+	cudaFree(gpu_U);CUDA_CHECK;
+	cudaFree(gpu_V);CUDA_CHECK;
+	cudaFree(gpu_Vorticity);CUDA_CHECK;
+
+	
+
+	// Solve the Poisson equation - update the image
+
+	cudaMalloc(&gpu_Out, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_In2, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_Vorticity, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_Domain, n*sizeof(int));CUDA_CHECK;
+
+	// copy host memory to device
+	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_Out, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_Vorticity, imgVorticity, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);CUDA_CHECK;
+
+	// launch kernel
+	for (int i=0; i<iter; i++)
+	{	
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
+	}
+	//global_solve_Poisson <<<grid,block>>> (gpu_Out, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
+
+	// copy result back to host (CPU) memory
+	cudaMemcpy(imgOut, gpu_In, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+
+	// free device (GPU) memory
+	cudaFree(gpu_Out);CUDA_CHECK;
+	cudaFree(gpu_In);CUDA_CHECK;
+	cudaFree(gpu_In2);CUDA_CHECK;
+	cudaFree(gpu_Vorticity);CUDA_CHECK;
+	cudaFree(gpu_Domain);CUDA_CHECK;
+
+
+
 
     // show input image
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
