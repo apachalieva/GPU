@@ -122,7 +122,7 @@ __global__ void global_detect_domain( float *imgIn, int *imgDomain, int w, int h
 
 __global__ void global_detect_domain( float *imgMask, int *imgDomain, int w, int h, int n )
 {
-	float c = 1.0;
+	float c = 0.0;
 	// For looping around a pixel
 	int neighbour[8]={ 1, -1, w, -w, -w-1, -w+1, w-1, w+1 };
 	int ind = threadIdx.x + blockDim.x * blockIdx.x;
