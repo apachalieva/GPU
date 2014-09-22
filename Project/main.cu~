@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 
 
     // CFD solver
-    cfd(argc, argv, imgU, imgV, imgDomain);
+    cfd( argc, argv, imgU, imgV, imgDomain, w, h );
 
     // show input image
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)

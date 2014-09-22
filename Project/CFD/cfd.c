@@ -58,8 +58,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	else
 		fname = PARAMF;
 
-	read_parameters(fname, &Re, &UI, &VI, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, &alpha, 
-			&omg, &tau, &itermax, &eps, &dt_value, &dp );
+	read_parameters(fname, &Re, &UI, &VI, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, imax, jmax, &alpha, &omg, &tau, &itermax, &eps, &dt_value, &dp );
 
 	fluid_cells = imax*jmax;
 
@@ -115,7 +114,6 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 		}
 	}
 
-	printf("Problem: %s\n", problem );
 	printf( "imax = %d, jmax = %d\n", imax, jmax );
 	printf( "Number of fluid cells = %d\n", fluid_cells );
 	printf( "Reynolds number: %f\n", Re);

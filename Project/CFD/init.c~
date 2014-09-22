@@ -14,8 +14,8 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
                      double *dt,                   /* time step 			*/
                      double *dx,                   /* length of a cell x-dir. 		*/
                      double *dy,                   /* length of a cell y-dir. 		*/
-                     int    *imax,                 /* number of cells x-direction	*/
-                     int    *jmax,                 /* number of cells y-direction	*/
+                     int    imax,                 /* number of cells x-direction	*/
+                     int    jmax,                 /* number of cells y-direction	*/
                      double *alpha,                /* uppwind differencing factor	*/
                      double *omg,                  /* relaxation factor 		*/
                      double *tau,                  /* safety factor for time step	*/
@@ -23,8 +23,7 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
 		                                   /* for pressure per time step	*/
                      double *eps,                  /* accuracy bound for pressure	*/
                      double *dt_value,             /* time for output 			*/
-                     double *dp,		   /* dp/dx gradient of pressure 	*/
-                     int    *p			   /* specification of the problem 	*/
+                     double *dp		   /* dp/dx gradient of pressure 	*/
 		  )
 {
    READ_DOUBLE( szFileName, *xlength );
@@ -33,9 +32,6 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_DOUBLE( szFileName, *Re    );
    READ_DOUBLE( szFileName, *t_end );
    READ_DOUBLE( szFileName, *dt    );
-
-   READ_INT   ( szFileName, *imax );
-   READ_INT   ( szFileName, *jmax );
 
    READ_DOUBLE( szFileName, *omg   );
    READ_DOUBLE( szFileName, *eps   );
@@ -52,7 +48,6 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_DOUBLE( szFileName, *PI );
 
    READ_DOUBLE( szFileName, *dp );
-   READ_INT   ( szFileName, *p );
 
    *dx = *xlength / (double)(*imax);
    *dy = *ylength / (double)(*jmax);

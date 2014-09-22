@@ -14,8 +14,8 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
                      double *dt,                   /* time step 			*/
                      double *dx,                   /* length of a cell x-dir. 		*/
                      double *dy,                   /* length of a cell y-dir. 		*/
-                     int    *imax,                 /* number of cells x-direction	*/
-                     int    *jmax,                 /* number of cells y-direction	*/
+                     int    imax,                 /* number of cells x-direction	*/
+                     int    jmax,                 /* number of cells y-direction	*/
                      double *alpha,                /* uppwind differencing factor	*/
                      double *omg,                  /* relaxation factor 		*/
                      double *tau,                  /* safety factor for time step	*/
@@ -49,8 +49,8 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
 
    READ_DOUBLE( szFileName, *dp );
 
-   *dx = *xlength / (double)(*imax);
-   *dy = *ylength / (double)(*jmax);
+   *dx = *xlength / (double)(imax);
+   *dy = *ylength / (double)(jmax);
 
    return 1;
 }

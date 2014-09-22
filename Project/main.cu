@@ -198,8 +198,6 @@ int main(int argc, char **argv)
 
 	int n = w*h*nc, n2=w*h;
 
-
-
 	// Calculate gradient
 
 	// allocate GPU memory

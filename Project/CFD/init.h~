@@ -61,8 +61,7 @@ int read_parameters( const char *szFileName,       /* name of the file 		 	*/
 		                                   /* for pressure per time step 	*/
                      double *eps,                  /* accuracy bound for pressure	*/
                      double *dt_value,             /* time for output 			*/
-                     double *dp,		   /* dp/dx gradient of pressure 	*/
-                     int    *p			   /* specification of the problem 	*/
+                     double *dp		     /* dp/dx gradient of pressure 	*/
 		   );
 
 void init_flag( const int  imax, 
