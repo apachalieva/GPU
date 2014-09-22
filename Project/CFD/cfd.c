@@ -111,12 +111,20 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 			/* output vtk file for visualization */
 			write_vtkFile( VISUAF, n, xlength, ylength, imax, jmax, dx, dy, U, V, P );
 			step++;
-		}
+		}	
 	}
 
+	// TODO copy U and V to imgU and imgV
+	int i, j;
+	for( i = 0; i <= imax; i++ ){
+	  for( j = 0; j <= jmax; j++){
+	    imgU[ i+j*imax ] = U[i][j];
+	    imgV[ i+j*imax ] = V[i][j];
+	  }
+	}
 	printf( "imax = %d, jmax = %d\n", imax, jmax );
 	printf( "Number of fluid cells = %d\n", fluid_cells );
-	printf( "Reynolds number: %f\n", Re);
+	printf( "Reynolds number: %f\n", Re );
 
 	/* free memory */
 	free_matrix( U, 0, imax+1, 0, jmax+1 );

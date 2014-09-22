@@ -26,9 +26,6 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
                      double *dp		   /* dp/dx gradient of pressure 	*/
 		  )
 {
-   READ_DOUBLE( szFileName, *xlength );
-   READ_DOUBLE( szFileName, *ylength );
-
    READ_DOUBLE( szFileName, *Re    );
    READ_DOUBLE( szFileName, *t_end );
    READ_DOUBLE( szFileName, *dt    );
@@ -48,7 +45,10 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_DOUBLE( szFileName, *PI );
 
    READ_DOUBLE( szFileName, *dp );
-
+   
+   *xlength = (double)(imax)/10;
+   *ylength = (double)(jmax)/10;
+   
    *dx = *xlength / (double)(imax);
    *dy = *ylength / (double)(jmax);
 
