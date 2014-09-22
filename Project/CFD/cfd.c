@@ -109,11 +109,11 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 		t += dt;
 		n++;
 
-		if(step*dt_value <= t){
+		//if(step*dt_value <= t){
 			/* output vtk file for visualization */
 			write_vtkFile( VISUAF, n, xlength, ylength, imax, jmax, dx, dy, U, V, P );
 			step++;
-		}	
+		//}	
 	//}
 
 	// TODO copy U and V to imgU and imgV

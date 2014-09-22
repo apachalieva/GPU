@@ -176,6 +176,9 @@ int main(int argc, char **argv)
 	// TODO: Temporarly we consider just a grayscale inpainting
 	float *imgU = new float[(size_t)w*h];
 	float *imgV = new float[(size_t)w*h];
+	
+	float *initU = new float[(size_t)w*h];
+	float *initV = new float[(size_t)w*h];
 
 
     // For camera mode: Make a loop to read in camera frames
@@ -292,9 +295,36 @@ for (int j=0; j<iter; j++)
 
 if (option == 1)
 {
+    if ( j == 0 )
+	{	
+		// Calculate vorticity	
+		// allocate GPU memory
 
-    // CFD solver
-    cfd( argc, argv, imgU, imgV, imgDomain, w, h, j );
+		cudaMalloc(&gpu_U, n*sizeof(float));CUDA_CHECK;
+		cudaMalloc(&gpu_V, n*sizeof(float));CUDA_CHECK;
+		cudaMalloc(&gpu_Vorticity, n*sizeof(float));CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(gpu_U, imgU, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+		cudaMemcpy(gpu_V, imgV, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+
+		// launch kernel
+		global_vorticity <<<grid,block>>> (gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+		cudaMemcpy(initU, gpu_U, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+		cudaMemcpy(initV, gpu_V, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(gpu_U);CUDA_CHECK;
+		cudaFree(gpu_V);CUDA_CHECK;
+		cudaFree(gpu_Vorticity);CUDA_CHECK;
+
+	}
+	// CFD solver
+	cfd( argc, argv, imgU, imgV, imgDomain, initU, initV, w, h, j );
+
 
 	// Calculate vorticity	
 	// allocate GPU memory
@@ -313,10 +343,6 @@ if (option == 1)
 	// copy result back to host (CPU) memory
 	cudaMemcpy(imgVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
-	if ( j == 0 )
-	{
-		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
-	}
 
 	// free device (GPU) memory
 	cudaFree(gpu_U);CUDA_CHECK;
@@ -337,6 +363,15 @@ for (int ind=0; ind<w*h*nc; ind++)
 }
 	
 
+    if ( j == 0 )
+	{	
+		for (int ind=0; ind<w*h*nc; ind++)
+		{
+			if (imgDomain[ind] == 1)
+			imgIn[ind] = 1.0;
+		}
+	}
+
 	// Solve the Poisson equation - update the image
 
 	cudaMalloc(&gpu_Out, n*sizeof(float));CUDA_CHECK;
@@ -345,6 +380,8 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMalloc(&gpu_initVorticity, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_Domain, n*sizeof(int));CUDA_CHECK;
 
+
+
 	// copy host memory to device
 	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Out, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
@@ -352,11 +389,15 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMemcpy(gpu_initVorticity, initVorticity, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);CUDA_CHECK;
 
+    // show output image: first convert to interleaved opencv format from the layered raw array
+    convert_layered_to_mat(mOut, imgVorticity);
+    showImage("OutputVort", mOut, 100+w+80, 100);
+
 	// launch kernel
 	for (int i=0; i<poisson; i++)
 	{	
-	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_initVorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
-	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_initVorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_initVorticity, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_initVorticity, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
 	}
 	//global_solve_Poisson <<<grid,block>>> (gpu_Out, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
 
@@ -399,6 +440,8 @@ for (int ind=0; ind<w*h*nc; ind++)
     delete[] imgMask;
     delete[] imgVorticity;
     delete[] initVorticity;
+    delete[] initU;
+    delete[] initV;
     delete[] imgDomain;
     delete[] v1;
     delete[] v2;

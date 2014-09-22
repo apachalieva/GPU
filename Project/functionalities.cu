@@ -52,7 +52,6 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 
 	if ( ind<n ) 
 	{ 	
-	
 	    bool isActive = ((x<w && y<h) && (((x+y)%2)==redOrBlack));
 	    //bool isActive = (x<w && y<h); //&& (((x+y)%2)==redOrBlack));
 	    
@@ -81,7 +80,7 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 		{
 			f = 0.0f;
 		}			    
-
+			// TODO: Think about the sign!!!
 		    float val = ( f + (upx + umx + upy + umy) ) / 4.0;
 		    //float val = ((upx + umx + upy + umy) ) / 4.0;
 		    val = val + sor_theta*(val-u0);

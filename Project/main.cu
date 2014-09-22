@@ -325,6 +325,7 @@ if (option == 1)
 	// CFD solver
 	cfd( argc, argv, imgU, imgV, imgDomain, initU, initV, w, h, j );
 
+
 	// Calculate vorticity	
 	// allocate GPU memory
 
@@ -342,7 +343,6 @@ if (option == 1)
 	// copy result back to host (CPU) memory
 	cudaMemcpy(imgVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
-	
 
 	// free device (GPU) memory
 	cudaFree(gpu_U);CUDA_CHECK;
@@ -355,13 +355,22 @@ else if (option == 0)
 for (int ind=0; ind<w*h*nc; ind++)
 {
 	imgVorticity[ind] = 0.0f;
-
+	initVorticity[ind] = 0.0f;
 }
 
 
 
 }
 	
+
+    if ( j == 0 )
+	{	
+		for (int ind=0; ind<w*h*nc; ind++)
+		{
+			if (imgDomain[ind] == 1)
+			imgIn[ind] = 1.0;
+		}
+	}
 
 	// Solve the Poisson equation - update the image
 
@@ -371,6 +380,8 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMalloc(&gpu_initVorticity, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_Domain, n*sizeof(int));CUDA_CHECK;
 
+
+
 	// copy host memory to device
 	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Out, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
@@ -378,11 +389,15 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMemcpy(gpu_initVorticity, initVorticity, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);CUDA_CHECK;
 
+    // show output image: first convert to interleaved opencv format from the layered raw array
+    convert_layered_to_mat(mOut, imgVorticity);
+    showImage("OutputVort", mOut, 100+w+80, 100);
+
 	// launch kernel
 	for (int i=0; i<poisson; i++)
 	{	
-	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_initVorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
-	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_initVorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_initVorticity, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_initVorticity, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
 	}
 	//global_solve_Poisson <<<grid,block>>> (gpu_Out, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
 
