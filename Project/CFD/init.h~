@@ -66,8 +66,8 @@ int read_parameters( const char *szFileName,       /* name of the file 		 	*/
 
 void init_uv( int imax, 
 	      int jmax, 
-	      float **U, 
-	      float **V, 
+	      double **U, 
+	      double **V, 
 	      float *imgU, 
 	      float *imgV, 
 	      int **Flag 

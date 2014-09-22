@@ -70,7 +70,8 @@ void init_uv( int imax,
 	      double **V, 
 	      float *imgU, 
 	      float *imgV, 
-	      int **Flag 
+	      int **Flag, 
+	      int iter
 	    );
 
 void init_flag( const int  imax, 

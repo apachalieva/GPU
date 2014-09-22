@@ -44,7 +44,7 @@
  * - calculate_uv() Calculate the velocity at the next time step.
  */
 
-int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int imax, int jmax, int iter ){
+int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int imax, int jmax, int iter, int max_iter ){
 	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res, dp;
 	double **U, **V, **P, **F, **G, **RS, **boundU, **boundV;
 	int n, step, it, itermax;
@@ -68,9 +68,10 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	/* should we change the dimension of the matrices in order to save space? */
 	U = matrix ( 0 , imax+1 , 0 , jmax+1 );
 	V = matrix ( 0 , imax+1 , 0 , jmax+1 );
-	boundU = matrix ( 0 , imax+1 , 0 , jmax+1 );
-	boundV = matrix ( 0 , imax+1 , 0 , jmax+1 );
-	
+	if( iter == 0 ) {
+	  boundU = matrix ( 0 , imax+1 , 0 , jmax+1 );
+	  boundV = matrix ( 0 , imax+1 , 0 , jmax+1 );
+	}
 	P = matrix ( 0 , imax+1 , 0 , jmax+1 );
 
 	F = matrix ( 0 , imax , 0 , jmax );
@@ -78,7 +79,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	RS = matrix ( 0 , imax , 0 , jmax );
 
 	init_flag( imax, jmax, Flag, imgDomain );
-	init_uv( imax, jmax, U, V, imgU, imgV, Flag );
+	init_uv( imax, jmax, U, V, imgU, imgV, Flag, iter );
 	
 	t = .0;
 	n = 0;
@@ -136,6 +137,11 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	/* free memory */
 	free_matrix( U, 0, imax+1, 0, jmax+1 );
 	free_matrix( V, 0, imax+1, 0, jmax+1 );
+	
+	if( iter == max_iter ){
+	    free_matrix( boundU, 0, imax+1, 0, jmax+1 );
+	    free_matrix( boundV, 0, imax+1, 0, jmax+1 );
+	}
 	free_matrix( P, 0, imax+1, 0, jmax+1 );
 
 	free_matrix( F, 0, imax, 0, jmax );
