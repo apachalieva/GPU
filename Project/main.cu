@@ -176,6 +176,9 @@ int main(int argc, char **argv)
 	// TODO: Temporarly we consider just a grayscale inpainting
 	float *imgU = new float[(size_t)w*h];
 	float *imgV = new float[(size_t)w*h];
+	
+	float *initU = new float[(size_t)w*h];
+	float *initV = new float[(size_t)w*h];
 
 
     // For camera mode: Make a loop to read in camera frames
@@ -292,9 +295,35 @@ for (int j=0; j<iter; j++)
 
 if (option == 1)
 {
+    if ( j == 0 )
+	{	
+		// Calculate vorticity	
+		// allocate GPU memory
 
-    // CFD solver
-    cfd( argc, argv, imgU, imgV, imgDomain, w, h, j, iter );
+		cudaMalloc(&gpu_U, n*sizeof(float));CUDA_CHECK;
+		cudaMalloc(&gpu_V, n*sizeof(float));CUDA_CHECK;
+		cudaMalloc(&gpu_Vorticity, n*sizeof(float));CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(gpu_U, imgU, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+		cudaMemcpy(gpu_V, imgV, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+
+		// launch kernel
+		global_vorticity <<<grid,block>>> (gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+		cudaMemcpy(initU, gpu_U, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+		cudaMemcpy(initV, gpu_V, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(gpu_U);CUDA_CHECK;
+		cudaFree(gpu_V);CUDA_CHECK;
+		cudaFree(gpu_Vorticity);CUDA_CHECK;
+
+	}
+	// CFD solver
+	cfd( argc, argv, imgU, imgV, imgDomain, initU, initV, w, h, j );
 
 	// Calculate vorticity	
 	// allocate GPU memory
@@ -313,10 +342,7 @@ if (option == 1)
 	// copy result back to host (CPU) memory
 	cudaMemcpy(imgVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
-	if ( j == 0 )
-	{
-		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
-	}
+	
 
 	// free device (GPU) memory
 	cudaFree(gpu_U);CUDA_CHECK;
@@ -399,6 +425,8 @@ for (int ind=0; ind<w*h*nc; ind++)
     delete[] imgMask;
     delete[] imgVorticity;
     delete[] initVorticity;
+    delete[] initU;
+    delete[] initV;
     delete[] imgDomain;
     delete[] v1;
     delete[] v2;

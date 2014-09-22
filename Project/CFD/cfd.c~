@@ -44,9 +44,9 @@
  * - calculate_uv() Calculate the velocity at the next time step.
  */
 
-int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int imax, int jmax, int iter, int max_iter ){
+int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *initBU, float *initBV, int imax, int jmax, int iter ){
 	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res, dp;
-	double **U, **V, **P, **F, **G, **RS, **boundU, **boundV;
+	double **U, **V, **P, **F, **G, **RS;
 	int n, step, it, itermax;
 	int fluid_cells;		/* Number of fluid cells in our geometry */
 	char *fname;
@@ -68,10 +68,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	/* should we change the dimension of the matrices in order to save space? */
 	U = matrix ( 0 , imax+1 , 0 , jmax+1 );
 	V = matrix ( 0 , imax+1 , 0 , jmax+1 );
-	if( iter == 0 ) {
-	  boundU = matrix ( 0 , imax+1 , 0 , jmax+1 );
-	  boundV = matrix ( 0 , imax+1 , 0 , jmax+1 );
-	}
+	
 	P = matrix ( 0 , imax+1 , 0 , jmax+1 );
 
 	F = matrix ( 0 , imax , 0 , jmax );
@@ -88,10 +85,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	//while( t <= t_end ){
 		if( tau > 0 ) calculate_dt( Re, tau, &dt, dx, dy, imax, jmax, U, V );
 		
-		if( iter == 0 ) {
-		  findBoundaryvalues( imax, jmax, boundU, boundV, imgU, imgV, Flag );
-		}
-		setBoundaryvalues( imax, jmax, boundU, boundV, U, V, Flag );
+		boundaryvalues( imax, jmax, U, V, initBU, initBV, Flag );
 		
 		/* calculate new values for F and G */
 		calculate_fg( Re, GX, GY, alpha, dt, dx, dy, imax, jmax, U, V, F, G, Flag );
@@ -124,6 +118,9 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 
 	// TODO copy U and V to imgU and imgV
 	int i, j;
+
+	//boundU = matrix ( 0 , imax+1 , 0 , jmax+1 );
+	//boundV = matrix ( 0 , imax+1 , 0 , jmax+1 );
 	for( i = 0; i <= imax; i++ ){
 	  for( j = 0; j <= jmax; j++){
 	    imgU[ i+j*imax ] = U[i][j];
@@ -138,10 +135,6 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, int ima
 	free_matrix( U, 0, imax+1, 0, jmax+1 );
 	free_matrix( V, 0, imax+1, 0, jmax+1 );
 	
-	if( iter == max_iter ){
-	    free_matrix( boundU, 0, imax+1, 0, jmax+1 );
-	    free_matrix( boundV, 0, imax+1, 0, jmax+1 );
-	}
 	free_matrix( P, 0, imax+1, 0, jmax+1 );
 
 	free_matrix( F, 0, imax, 0, jmax );
