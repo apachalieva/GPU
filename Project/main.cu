@@ -294,7 +294,7 @@ if (option == 1)
 {
 
     // CFD solver
-    cfd( argc, argv, imgU, imgV, imgDomain, w, h );
+    cfd( argc, argv, imgU, imgV, imgDomain, w, h, j);
 
 	// Calculate vorticity	
 	// allocate GPU memory
