@@ -171,6 +171,7 @@ int main(int argc, char **argv)
 	float *v1 = new float[(size_t)w*h*nc];
 	float *v2 = new float[(size_t)w*h*nc];
 	float *imgVorticity = new float[(size_t)w*h*nc];
+	float *initVorticity = new float[(size_t)w*h*nc];
 	int *imgDomain = new int[(size_t)w*h];
 	// TODO: Temporarly we consider just a grayscale inpainting
 	float *imgU = new float[(size_t)w*h];
@@ -219,7 +220,7 @@ for (int j=0; j<iter; j++)
 	// Calculate gradient
 
 	// allocate GPU memory
-	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_U, *gpu_V, *gpu_Mask, *gpu_In2;
+	float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Vorticity, *gpu_U, *gpu_V, *gpu_Mask, *gpu_initVorticity;
 	int *gpu_Domain;
 
 
@@ -312,6 +313,11 @@ if (option == 1)
 	// copy result back to host (CPU) memory
 	cudaMemcpy(imgVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 
+	if ( j == 0 )
+	{
+		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;		
+	}
+
 	// free device (GPU) memory
 	cudaFree(gpu_U);CUDA_CHECK;
 	cudaFree(gpu_V);CUDA_CHECK;
@@ -323,7 +329,10 @@ else if (option == 0)
 for (int ind=0; ind<w*h*nc; ind++)
 {
 	imgVorticity[ind] = 0.0f;
+
 }
+
+
 
 }
 	
@@ -332,21 +341,22 @@ for (int ind=0; ind<w*h*nc; ind++)
 
 	cudaMalloc(&gpu_Out, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
-	cudaMalloc(&gpu_In2, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_Vorticity, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_initVorticity, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_Domain, n*sizeof(int));CUDA_CHECK;
 
 	// copy host memory to device
 	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Out, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Vorticity, imgVorticity, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
+	cudaMemcpy(gpu_initVorticity, initVorticity, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 	// launch kernel
 	for (int i=0; i<poisson; i++)
 	{	
-	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
-	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_initVorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
+	global_solve_Poisson <<<grid,block>>> (gpu_In, gpu_In, gpu_Vorticity, gpu_initVorticity, gpu_Domain, w, h, nc, n, 0.7, 0);
 	}
 	//global_solve_Poisson <<<grid,block>>> (gpu_Out, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
 
@@ -357,7 +367,7 @@ for (int ind=0; ind<w*h*nc; ind++)
 	// free device (GPU) memory
 	cudaFree(gpu_Out);CUDA_CHECK;
 	cudaFree(gpu_In);CUDA_CHECK;
-	cudaFree(gpu_In2);CUDA_CHECK;
+	cudaFree(gpu_initVorticity);CUDA_CHECK;
 	cudaFree(gpu_Vorticity);CUDA_CHECK;
 	cudaFree(gpu_Domain);CUDA_CHECK;
 
@@ -388,6 +398,7 @@ for (int ind=0; ind<w*h*nc; ind++)
     delete[] imgIn;
     delete[] imgMask;
     delete[] imgVorticity;
+    delete[] initVorticity;
     delete[] imgDomain;
     delete[] v1;
     delete[] v2;

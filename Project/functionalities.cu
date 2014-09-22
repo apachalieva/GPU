@@ -36,7 +36,7 @@ __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,
 }
 
 
-__global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *rhs, int *imgDomain, int w, int h, int nc, int n, float sor_theta, int redOrBlack)
+__global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVorticity, float *rhs, int *imgDomain, int w, int h, int nc, int n, float sor_theta, int redOrBlack)
 {
 	
 	float dh = 1.0;
@@ -68,7 +68,14 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *rhs, i
 
 		if (imgDomain[ind] == 1)
 		{
-			f = -dh*dh*rhs[ind];
+			if ((imgDomain[ind+1] == 1) && (imgDomain[ind-1] == 1) && (imgDomain[ind+w] == 1) && (imgDomain[ind-w] == 1))
+			{
+				f = -dh*dh*rhs[ind];
+			}
+			else
+			{
+				f = -dh*dh*initVorticity[ind];
+			}
 		}
 		else
 		{
