@@ -23,7 +23,8 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
 		                                   /* for pressure per time step	*/
                      double *eps,                  /* accuracy bound for pressure	*/
                      double *dt_value,             /* time for output 			*/
-                     double *dp		   /* dp/dx gradient of pressure 	*/
+                     double *dp,		   /* dp/dx gradient of pressure 	*/
+                     int    *p			   /* specification of the problem 	*/
 		  )
 {
    READ_DOUBLE( szFileName, *xlength );
@@ -32,6 +33,9 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_DOUBLE( szFileName, *Re    );
    READ_DOUBLE( szFileName, *t_end );
    READ_DOUBLE( szFileName, *dt    );
+
+   READ_INT   ( szFileName, *imax );
+   READ_INT   ( szFileName, *jmax );
 
    READ_DOUBLE( szFileName, *omg   );
    READ_DOUBLE( szFileName, *eps   );
@@ -48,6 +52,7 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_DOUBLE( szFileName, *PI );
 
    READ_DOUBLE( szFileName, *dp );
+   READ_INT   ( szFileName, *p );
 
    *dx = *xlength / (double)(*imax);
    *dy = *ylength / (double)(*jmax);
