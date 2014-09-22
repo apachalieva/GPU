@@ -5,6 +5,89 @@
 
 #include "functionalities.h"
 
+
+
+__global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity, int w, int h, int nc, int n )
+{
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+	int x, y, ch;	
+
+	float dVdx, dUdy;
+
+	//ch = ind / w*h;
+	ch = 0;
+	y = ( ind - ch*w*h ) / w;
+	x = ( ind - ch*w*h ) % w;
+
+	if( ind < n )
+	{ 
+
+		//v1[ind] = cuda_diff_x(imgIn[ind+1], imgIn[ind], x, w);
+		//v2[ind] = cuda_diff_y(imgIn[ind+w], imgIn[ind], y, h);
+
+		dVdx = (1./32.)*(3*imgV[max(min(w-1, x+1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 10*imgV[max(min(w-1, x+1), 0) + w*max(min(h-1,y),0) + ch*w*h] + 3*imgV[max(min(w-1, x+1), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 3*imgV[max(min(w-1, x-1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] - 10*imgV[max(min(w-1, x-1), 0) + w*max(min(h-1,y),0) + ch*w*h] - 3*imgV[max(min(w-1, x-1), 0) + w*max(min(h-1,y-1),0) + ch*w*h]);
+
+		dUdy = (1./32.)*(3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] - 3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y-1),0) + ch*w*h]);
+
+		imgVorticity[ind] = dVdx - dUdy;
+
+
+	}
+}
+
+
+__global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *rhs, int *imgDomain, int w, int h, int nc, int n, float sor_theta, int redOrBlack)
+{
+	
+	float dh = 1.0;
+	float f;
+	
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+	int x, y, ch;
+	//ch = ind / w*h;
+	ch = 0;
+	
+	x = ( ind - ch*w*h ) % w;
+ 	y = ( ind - ch*w*h ) / w;
+
+	if ( ind<n ) 
+	{ 	
+	
+	    bool isActive = ((x<w && y<h) && (((x+y)%2)==redOrBlack));
+	    //bool isActive = (x<w && y<h); //&& (((x+y)%2)==redOrBlack));
+	    
+
+	    if ( (isActive) && (imgDomain[x + (size_t)w*y] == 1) )
+	    {
+
+		    float u0  = imgIn[ind];
+		    float upx = (x+1<w?  imgIn[x+1 + (size_t)w*(y  ) + w*h*ch] : u0);
+		    float umx = (x-1>=0? imgIn[x-1 + (size_t)w*(y  ) + w*h*ch] : u0);
+		    float upy = (y+1<h?  imgIn[x   + (size_t)w*(y+1) + w*h*ch] : u0);
+		    float umy = (y-1>=0? imgIn[x   + (size_t)w*(y-1) + w*h*ch] : u0);
+
+		if (imgDomain[ind] == 1)
+		{
+			f = -dh*dh*rhs[ind];
+		}
+		else
+		{
+			f = 0.0f;
+		}			    
+
+		    float val = ( f + (upx + umx + upy + umy) ) / 4.0;
+		    //float val = ((upx + umx + upy + umy) ) / 4.0;
+		    val = val + sor_theta*(val-u0);
+
+		    imgOut[ind] = val;
+	    }
+
+
+	}
+
+}
+
+
 __device__ float cuda_diff_x( float a, float b, int x, int w )
 {
 	if( x+1 < w ) return (a - b);
