@@ -292,9 +292,9 @@ for (int j=0; j<iter; j++)
 
 if (option == 1)
 {
+
     // CFD solver
     cfd( argc, argv, imgU, imgV, imgDomain, w, h );
-
 
 	// Calculate vorticity	
 	// allocate GPU memory
@@ -315,7 +315,7 @@ if (option == 1)
 
 	if ( j == 0 )
 	{
-		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;		
+		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 	}
 
 	// free device (GPU) memory
