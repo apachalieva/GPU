@@ -9,4 +9,4 @@
 #define FLUID 1
 #define INFLOW 2
 
-int cfd( int argc, char** args, float *imgU, float *imgV, int *imgDomain, int imax, int jmax );
+int cfd( int argc, char** args, float *imgU, float *imgV, int *imgDomain, int imax, int jmax, int iter );
