@@ -29,7 +29,7 @@ __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,
 
 		dUdy = (1./32.)*(3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] - 3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y-1),0) + ch*w*h]);
 
-		imgVorticity[ind] = dVdx - dUdy;
+		imgVorticity[ind] = (dVdx - dUdy)*1.5;
 
 
 	}
@@ -74,6 +74,8 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 			else
 			{
 				f = -dh*dh*initVorticity[ind];
+				//f = -dh*dh*rhs[ind];
+				
 			}
 		}
 		else

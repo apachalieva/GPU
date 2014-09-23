@@ -389,10 +389,6 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMemcpy(gpu_initVorticity, initVorticity, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Domain, imgDomain, w*h*sizeof(int), cudaMemcpyHostToDevice);CUDA_CHECK;
 
-    // show output image: first convert to interleaved opencv format from the layered raw array
-    convert_layered_to_mat(mOut, imgVorticity);
-    showImage("OutputVort", mOut, 100+w+80, 100);
-
 	// launch kernel
 	for (int i=0; i<poisson; i++)
 	{	
@@ -421,6 +417,15 @@ for (int ind=0; ind<w*h*nc; ind++)
     // show output image: first convert to interleaved opencv format from the layered raw array
     convert_layered_to_mat(mOut, imgOut);
     showImage("Output1", mOut, 100+w+40, 100);
+
+    // show output image: first convert to interleaved opencv format from the layered raw array
+    convert_layered_to_mat(mOut, imgVorticity);
+    mOut *=1000;
+    showImage("Heating", mOut, 100+w+80, 100);
+
+    convert_layered_to_mat(mOut, imgVorticity);
+    mOut *=-1000;
+    showImage("Cooling ", mOut, 100+w+80, 100);
 
     // ### Display your own output images here as needed
 #ifdef CAMERA
