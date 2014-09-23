@@ -3,8 +3,6 @@
 
 int read_parameters( const char *szFileName,       /* name of the file 			*/
 		     double *Re,                   /* reynolds number   		*/
-		     double *UI,                   /* velocity x-direction 		*/
-		     double *VI,                   /* velocity y-direction 		*/
                      double *PI,                   /* pressure 				*/
                      double *GX,                   /* gravitation x-direction 		*/
                      double *GY,                   /* gravitation y-direction 		*/
@@ -38,8 +36,6 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_INT   ( szFileName, *itermax );
    READ_DOUBLE( szFileName, *dt_value );
 
-   READ_DOUBLE( szFileName, *UI );
-   READ_DOUBLE( szFileName, *VI );
    READ_DOUBLE( szFileName, *GX );
    READ_DOUBLE( szFileName, *GY );
    READ_DOUBLE( szFileName, *PI );

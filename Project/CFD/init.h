@@ -41,8 +41,6 @@
 
 int read_parameters( const char *szFileName,       /* name of the file 		 	*/
                      double *Re,                   /* reynolds number   	 	*/
-                     double *UI,                   /* velocity x-direction 	 	*/
-                     double *VI,                   /* velocity y-direction 	 	*/
                      double *PI,                   /* pressure 			 	*/
                      double *GX,                   /* gravitation x-direction 	 	*/
                      double *GY,                   /* gravitation y-direction 	 	*/

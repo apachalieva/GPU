@@ -45,7 +45,7 @@
  */
 
 int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *initBU, float *initBV, int imax, int jmax, int iter ){
-	double Re, UI, VI, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res, dp;
+	double Re, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res, dp;
 	double **U, **V, **P, **F, **G, **RS;
 	int n, step, it, itermax;
 	int fluid_cells;		/* Number of fluid cells in our geometry */
@@ -58,7 +58,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 	else
 		fname = PARAMF;
 
-	read_parameters(fname, &Re, &UI, &VI, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, imax, jmax, &alpha, &omg, &tau, &itermax, &eps, &dt_value, &dp );
+	read_parameters(fname, &Re, &PI, &GX, &GY, &t_end, &xlength, &ylength, &dt, &dx, &dy, imax, jmax, &alpha, &omg, &tau, &itermax, &eps, &dt_value, &dp );
 	
 	fluid_cells = imax*jmax;
 
