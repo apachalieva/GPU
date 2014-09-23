@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/gpucourse/!svn/ver/712/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor
+END
+aux.cu
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/gpucourse/!svn/ver/711/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor/aux.cu
+END
+aux.h
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/gpucourse/!svn/ver/711/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor/aux.h
+END
+image_result.png
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/gpucourse/!svn/ver/711/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor/image_result.png
+END
+image_input.png
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/gpucourse/!svn/ver/711/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor/image_input.png
+END
+main.cu
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/gpucourse/!svn/ver/711/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor/main.cu
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/gpucourse/!svn/ver/711/GPU_Course_WS1314/Programming/exercises/solutions/15_energy_inpainting_sor/Makefile
+END
