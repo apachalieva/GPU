@@ -7,7 +7,7 @@
 
 
 
-__global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity, int w, int h, int nc, int n )
+__global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity, int w, int h, int nc, int n, int iter )
 {
 	int ind = threadIdx.x + blockDim.x * blockIdx.x;
 	int x, y, ch;	
@@ -28,8 +28,8 @@ __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,
 		dVdx = (1./32.)*(3*imgV[max(min(w-1, x+1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 10*imgV[max(min(w-1, x+1), 0) + w*max(min(h-1,y),0) + ch*w*h] + 3*imgV[max(min(w-1, x+1), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 3*imgV[max(min(w-1, x-1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] - 10*imgV[max(min(w-1, x-1), 0) + w*max(min(h-1,y),0) + ch*w*h] - 3*imgV[max(min(w-1, x-1), 0) + w*max(min(h-1,y-1),0) + ch*w*h]);
 
 		dUdy = (1./32.)*(3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] - 3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y-1),0) + ch*w*h]);
-
-		imgVorticity[ind] = (dVdx - dUdy)*2.0;
+		// ( iter & 1 ) chanigin the sign depending on the iteration number
+		imgVorticity[ind] = ( iter & 1 ) * ( dVdx - dUdy ) * 1.5;
 
 
 	}
@@ -73,7 +73,7 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 			}
 			else
 			{
-				f = -dh*dh*initVorticity[ind];
+				f = -dh*dh*initVorticity[ind] - 0.01;
 				//f = -dh*dh*rhs[ind];
 				
 			}

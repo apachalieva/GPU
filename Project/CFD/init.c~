@@ -36,8 +36,6 @@ int read_parameters( const char *szFileName,       /* name of the file 			*/
    READ_INT   ( szFileName, *itermax );
    READ_DOUBLE( szFileName, *dt_value );
 
-   READ_DOUBLE( szFileName, *UI );
-   READ_DOUBLE( szFileName, *VI );
    READ_DOUBLE( szFileName, *GX );
    READ_DOUBLE( szFileName, *GY );
    READ_DOUBLE( szFileName, *PI );
@@ -64,8 +62,8 @@ void init_uv( int imax, int jmax, double **U, double **V, float *imgU, float *im
 	    V[i][j] = 0.0;
 	}
 	else{
-	   U[i][j] = imgU[i+j*imax];
-	   V[i][j] = imgV[i+j*imax];
+	   U[i][j] = 3.0*imgU[i+j*imax];
+	   V[i][j] = 3.0*imgV[i+j*imax];
 	}
       }
     }

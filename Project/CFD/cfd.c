@@ -74,7 +74,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 	F = matrix ( 0 , imax , 0 , jmax );
 	G = matrix ( 0 , imax , 0 , jmax );
 	RS = matrix ( 0 , imax , 0 , jmax );
-
+	
 	init_flag( imax, jmax, Flag, imgDomain );
 	init_uv( imax, jmax, U, V, imgU, imgV, Flag, iter );
 	

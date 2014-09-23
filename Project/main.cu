@@ -213,7 +213,8 @@ int main(int argc, char **argv)
     // ###
     // ###
 
-	int n = w*h*nc, n2=w*h;
+	int n = w*h*nc; 
+	// int n2=w*h;
 
 for (int j=0; j<iter; j++)
 {
@@ -309,7 +310,7 @@ if (option == 1)
 		cudaMemcpy(gpu_V, imgV, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 		// launch kernel
-		global_vorticity <<<grid,block>>> (gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n);
+		global_vorticity <<<grid,block>>> ( gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n, j );
 
 		// copy result back to host (CPU) memory
 		cudaMemcpy(initVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
@@ -338,7 +339,7 @@ if (option == 1)
 	cudaMemcpy(gpu_V, imgV, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 
 	// launch kernel
-	global_vorticity <<<grid,block>>> (gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n);
+	global_vorticity <<<grid,block>>> (gpu_U, gpu_V, gpu_Vorticity, w, h, nc, n, j );
 
 	// copy result back to host (CPU) memory
 	cudaMemcpy(imgVorticity, gpu_Vorticity, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;

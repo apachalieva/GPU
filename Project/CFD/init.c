@@ -62,8 +62,8 @@ void init_uv( int imax, int jmax, double **U, double **V, float *imgU, float *im
 	    V[i][j] = 0.0;
 	}
 	else{
-	   U[i][j] = imgU[i+j*imax];
-	   V[i][j] = imgV[i+j*imax];
+	   U[i][j] = 3.0*imgU[i+j*imax];
+	   V[i][j] = 3.0*imgV[i+j*imax];
 	}
       }
     }
