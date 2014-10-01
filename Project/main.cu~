@@ -92,6 +92,16 @@ int main(int argc, char **argv)
     getParam("option", option, argc, argv);
     cout << "option: " << option << endl;
 
+    // Timestep for anisotropic diffusion
+    float tau = 0.02;
+    getParam("tau", tau, argc, argv);
+    cout << "tau: " << tau << endl;
+
+    // Timestep for anisotropic diffusion
+    int aniso_iter = 10;
+    getParam("aniso_iter", aniso_iter, argc, argv);
+    cout << "aniso_iter: " << tau << endl;
+
 
 
 
@@ -214,7 +224,8 @@ int main(int argc, char **argv)
     // ###
 
 	int n = w*h*nc; 
-	// int n2=w*h;
+
+
 
 for (int j=0; j<iter; j++)
 {
@@ -267,7 +278,8 @@ for (int j=0; j<iter; j++)
 	// TODO: Temporarly we consider just a grayscale inpainting 
 	for (int i=0; i<w*h; i++)
 	{
-		imgV[i] = -imgV[i];
+		//imgV[i] = -imgV[i];
+		imgU[i] = -imgU[i];
 	}
 	
 
@@ -296,6 +308,7 @@ for (int j=0; j<iter; j++)
 
 if (option == 1)
 {
+
     if ( j == 0 )
 	{	
 		// Calculate vorticity	
@@ -324,7 +337,7 @@ if (option == 1)
 
 	}
 	// CFD solver
-	cfd( argc, argv, imgU, imgV, imgDomain, 2.0*initU, 2.0*initV, w, h, j );
+	cfd( argc, argv, imgU, imgV, imgDomain, initU, initV, w, h, j );
 
 
 	// Calculate vorticity	
@@ -382,6 +395,14 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMalloc(&gpu_Domain, n*sizeof(int));CUDA_CHECK;
 
 
+if (j==iter-1)
+{
+	for (int ind=0; ind<w*h; ind++)
+	{
+		imgVorticity[ind] = imgVorticity[ind]*10.0;
+		poisson = 20000;	
+	}
+}
 
 	// copy host memory to device
 	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
@@ -398,6 +419,9 @@ for (int ind=0; ind<w*h*nc; ind++)
 	}
 	//global_solve_Poisson <<<grid,block>>> (gpu_Out, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
 
+
+
+
 	// copy result back to host (CPU) memory
 	cudaMemcpy(imgOut, gpu_In, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
 	cudaMemcpy(imgIn, gpu_In, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
@@ -409,15 +433,14 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaFree(gpu_Vorticity);CUDA_CHECK;
 	cudaFree(gpu_Domain);CUDA_CHECK;
 
+	if (j+1 % 10 == 0) aniso_diff(imgIn, imgDomain, imgIn, w, h, nc, tau, aniso_iter, grid, block);
+
 }
+
 
 
     // show input image
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
-
-    // show output image: first convert to interleaved opencv format from the layered raw array
-    convert_layered_to_mat(mOut, imgOut);
-    showImage("Output1", mOut, 100+w+40, 100);
 
     // show output image: first convert to interleaved opencv format from the layered raw array
     convert_layered_to_mat(mOut, imgVorticity);
@@ -427,6 +450,10 @@ for (int ind=0; ind<w*h*nc; ind++)
     convert_layered_to_mat(mOut, imgVorticity);
     mOut *=-1000;
     showImage("Cooling ", mOut, 100+w+80, 100);
+
+    // show output image: first convert to interleaved opencv format from the layered raw array
+    convert_layered_to_mat(mOut, imgOut);
+    showImage("Output", mOut, 100+w+40, 100);
 
     // ### Display your own output images here as needed
 #ifdef CAMERA

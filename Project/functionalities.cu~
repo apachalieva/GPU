@@ -7,6 +7,10 @@
 
 
 
+
+//======================================= Functions for the inpainting ==============================================
+
+
 __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity, int w, int h, int nc, int n, int iter )
 {
 	int ind = threadIdx.x + blockDim.x * blockIdx.x;
@@ -29,7 +33,15 @@ __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,
 
 		dUdy = (1./32.)*(3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y+1),0) + ch*w*h] + 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y+1),0) + ch*w*h] - 3*imgU[max(min(w-1, x+1), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 10*imgU[max(min(w-1, x), 0) + w*max(min(h-1,y-1),0) + ch*w*h] - 3*imgU[max(min(w-1, x-1), 0) + w*max(min(h-1,y-1),0) + ch*w*h]);
 		// ( iter & 1 ) chanigin the sign depending on the iteration number
-		imgVorticity[ind] = ( iter & 1 ) * ( dVdx - dUdy ) * 1.5;
+		/* if ( iter & 1 )
+		{		
+			imgVorticity[ind] = ( dVdx - dUdy );
+		}
+		else
+		{
+			imgVorticity[ind] = -( dVdx - dUdy );
+		} */
+		imgVorticity[ind] = ( dVdx - dUdy );
 
 
 	}
@@ -39,7 +51,7 @@ __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,
 __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVorticity, float *rhs, int *imgDomain, int w, int h, int nc, int n, float sor_theta, int redOrBlack)
 {
 	
-	float dh = 1.0;
+	float dh = 0.5;
 	float f;
 	
 	int ind = threadIdx.x + blockDim.x * blockIdx.x;
@@ -69,11 +81,11 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 		{
 			if ((imgDomain[ind+1] == 1) && (imgDomain[ind-1] == 1) && (imgDomain[ind+w] == 1) && (imgDomain[ind-w] == 1))
 			{
-				f = -dh*dh*rhs[ind];
+				f = dh*dh*rhs[ind];
 			}
 			else
 			{
-				f = -dh*dh*initVorticity[ind] - 0.01;
+				f = dh*dh*initVorticity[ind];
 				//f = -dh*dh*rhs[ind];
 				
 			}
@@ -83,9 +95,9 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 			f = 0.0f;
 		}			    
 			// TODO: Think about the sign!!!
-		    float val = ( f + (upx + umx + upy + umy) ) / 4.0;
+		    float val = -( f - (upx + umx + upy + umy) ) / 4.0;
 		    //float val = ((upx + umx + upy + umy) ) / 4.0;
-		    val = val + sor_theta*(val-u0);
+		    val = sor_theta*val + (1.0-sor_theta)*u0;
 
 		    imgOut[ind] = val;
 	    }
@@ -236,5 +248,582 @@ __global__ void global_detect_domain( float *imgMask, int *imgDomain, int w, int
 		}
 		else imgDomain[ind] = OBSTACLE;
 	}
+}
+
+//======================================= Functions for anisotropic diffusion ==============================================
+
+__global__ void update_aniso_diff(float *imgIn, float *divergence, int *imgDomain, float *imgOut, float timestep, int w, int h, int nc, int n)
+{
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+
+	int x, y, ch;
+
+	ch = (int)(ind) / (int)(w*h);
+	y = (ind - ch*w*h) / (int)w;
+	x = (ind - ch*w*h) % (int)w;
+
+	if (ind<n)
+	{
+		if (imgDomain[x + (size_t)w*y] == 1)
+		{ 
+			imgOut[ind] = imgIn[ind] + timestep*divergence[ind];
+		}
+		else
+		{
+			imgOut[ind] = imgIn[ind];
+		}
+	}
+
+}
+
+__host__ __device__ float g_dash(float s)
+{
+	float eps = 0.01;
+	//return 1.0f;
+	return (1.0f/max(eps, s));
+	//return expf(-s*s/eps)/eps;
+}
+
+__global__ void global_diffusivity(float *v1, float *v2, float *diffusivity, int w, int h, int nc, int n)
+{
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+
+	int x, y, ch;
+
+	ch = (int)(ind) / (int)(w*h);
+	y = (ind - ch*w*h) / (int)w;
+	x = (ind - ch*w*h) % (int)w;
+
+	if (ind<n)
+	{ 
+
+		diffusivity[ind] = g_dash(sqrtf( v1[ind]*v1[ind] + v2[ind]*v2[ind]));
+
+	}
+
+}
+
+__global__ void mult_scal_vec(float *scal_field, float *vec_field, int w, int h, int nc, int n)
+{
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+
+	int x, y, ch;
+
+	ch = (int)(ind) / (int)(w*h);
+	y = (ind - ch*w*h) / (int)w;
+	x = (ind - ch*w*h) % (int)w;
+
+	if (ind<n)
+	{ 
+		vec_field[ind] = scal_field[ind]*vec_field[ind];
+		//vec_field[ind+w*h] = scal_field[ind]*vec_field[ind+w*h];
+		//vec_field[ind+2*w*h] = scal_field[ind]*vec_field[ind+2*w*h];
+	}
+
+}  
+
+
+__device__ float aniso_cuda_diff_x(float a, float b, int x, int w)
+{
+
+	if (x+1<w)
+	{
+		return (a - b);
+	}
+	else
+	{
+		return 0.0f;
+	}
+	
+}
+
+__device__ float aniso_cuda_diff_y(float a, float b, int y, int h)
+{
+
+	if (y+1<h)
+	{
+		return (a - b);
+	}
+	else
+	{
+		return 0.0f;
+	}
+	
+}
+
+__global__ void aniso_global_grad(float *imgIn, float *v1, float *v2, int w, int h, int nc, int n)
+{
+
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+
+	int x, y, ch;	
+
+	ch = (int)(ind) / (int)(w*h);
+	y = (ind - ch*w*h) / (int)w;
+	x = (ind - ch*w*h) % (int)w;
+
+	if (ind<n)
+	{ 
+
+		v1[ind] = aniso_cuda_diff_x(imgIn[ind+1], imgIn[ind], x, w);
+		v2[ind] = aniso_cuda_diff_y(imgIn[ind+w], imgIn[ind], y, h);
+
+	}
+
+	
+
+}
+
+
+__device__ float aniso_cuda_div_x(float a, float b, int x, int w)
+{
+		if ((x+1<w) && (x>0))
+		{
+			return (a - b);
+		}
+		else if (x+1<w)
+		{
+			return (a - 0);
+		}
+		else if (x>0)
+		{
+			return (0 - b);
+		}
+		else
+		{
+			return 0.;
+		}
+}
+
+
+__device__ float aniso_cuda_div_y(float a, float b, int y, int h)
+{
+		if ((y+1<h) && (y>0))
+		{
+			return (a - b);
+		}
+		else if (y+1<h)
+		{
+			return (a - 0);
+		}
+		else if (y>0)
+		{
+			return (0 - b);
+		}
+		else
+		{
+			return 0.;
+		}
+}
+
+__global__ void aniso_global_div(float *v1, float *v2, float *imgOut, int w, int h, int nc, int n)
+{
+
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+
+	int x, y, ch;
+
+	ch = (int)(ind) / (int)(w*h);
+	y = (ind - ch*w*h) / (int)w;
+	x = (ind - ch*w*h) % (int)w;
+
+	if ((ind<n) && (ind-w>=0) && (ind-1>=0)) 
+	{ 	
+		imgOut[ind] = cuda_div_x(v1[ind], v1[ind-1], x, w) + cuda_div_y(v2[ind], v2[ind-w], y, h);
+	}
+
+}
+
+
+
+
+__global__ void aniso_global_norm(float *imgIn, float *imgOut, int w, int h, int n)
+{
+	int ind = threadIdx.x + blockDim.x * blockIdx.x;
+	if (ind<n)
+	{ 
+		imgOut[ind] = imgIn[ind]*imgIn[ind];
+		//imgOut[ind] += imgIn[ind+w*h]*imgIn[ind+w*h];
+		//imgOut[ind] += imgIn[ind+2*w*h]*imgIn[ind+2*w*h];
+		imgOut[ind] = sqrtf(imgOut[ind]);
+	}
+}
+
+/*
+void aniso_diff(float *imgIn, int *imgDomain, float *imgOut, int w, int h, int nc, float tau, int N)
+{
+
+	float *v1 = new float[(size_t)w*h*nc];
+	float *v2 = new float[(size_t)w*h*nc];
+	float *divergence = new float[(size_t)w*h*nc];
+	float *diffusivity = new float[(size_t)w*h];
+	float *imgOutGray = new float[(size_t)w*h];
+
+	int n = w*h*nc;
+
+	for (int i=0; i<N; i++)
+	{
+		// allocate GPU memory
+		float *gpu_In, *gpu_v1, *gpu_v2, *gpu_Out, *gpu_Out_Gray;
+		int *gpu_Domain;
+
+		cudaMalloc(&gpu_In, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_v1, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_v2, n*sizeof(float));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+		dim3 block = dim3(128,1,1);
+
+		dim3 grid = dim3((n + block.x - 1) / block.x, 1, 1);
+		aniso_global_grad <<<grid,block>>> (gpu_In, gpu_v1, gpu_v2, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(v1, gpu_v1, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		cudaMemcpy(v2, gpu_v2, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(gpu_In);
+		CUDA_CHECK;
+		cudaFree(gpu_v1);
+		CUDA_CHECK;
+		cudaFree(gpu_v2);
+		CUDA_CHECK;
+
+
+		// Calculate diffusivity and multiply by gradient
+
+		// allocate GPU memory
+		float *gpu_diffusivity;
+
+		cudaMalloc(&gpu_v1, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_v2, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_diffusivity, w*h*sizeof(float));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_diffusivity, diffusivity, w*h*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+		global_diffusivity <<<grid,block>>> (gpu_v1, gpu_v2, gpu_diffusivity, w, h, nc, w*h);
+		mult_scal_vec <<<grid,block>>> (gpu_diffusivity, gpu_v1, w, h, nc, w*h);
+		mult_scal_vec <<<grid,block>>> (gpu_diffusivity, gpu_v2, w, h, nc, w*h);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(diffusivity, gpu_diffusivity, w*h * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		// copy result back to host (CPU) memory
+		cudaMemcpy(v1, gpu_v1, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		cudaMemcpy(v2, gpu_v2, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+
+		// free device (GPU) memory
+		cudaFree(gpu_diffusivity);
+		CUDA_CHECK;
+		cudaFree(gpu_v1);
+		CUDA_CHECK;
+		cudaFree(gpu_v2);
+		CUDA_CHECK;
+
+
+
+
+
+		// Calculate divergence of a gradient
+
+		// allocate GPU memory
+		float *gpu_divergence;
+
+		cudaMalloc(&gpu_v1, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_v2, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_divergence, n*sizeof(float));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(gpu_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_divergence, divergence, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+		//dim3 block = dim3(128,1,1);
+
+		//dim3 grid = dim3((n + block.x - 1) / block.x, 1, 1);
+		aniso_global_div <<<grid,block>>> (gpu_v1, gpu_v2, gpu_divergence, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(divergence, gpu_divergence, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(gpu_v1);
+		CUDA_CHECK;
+		cudaFree(gpu_v2);
+		CUDA_CHECK;
+		cudaFree(gpu_divergence);
+		CUDA_CHECK;
+
+		// Update image
+
+		// allocate GPU memory
+		//float *gpu_In, *gpu_Out_Gray;
+
+		cudaMalloc(&gpu_In, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_Out, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_divergence, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&gpu_Domain, n*sizeof(int));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_divergence, divergence, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(gpu_Domain, imgDomain, n*sizeof(int), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+
+		update_aniso_diff <<<grid,block>>> (gpu_In, gpu_divergence, gpu_Domain, gpu_Out, tau, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(imgOut, gpu_Out, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		cudaMemcpy(imgIn, gpu_Out, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(gpu_In);
+		CUDA_CHECK;
+		cudaFree(gpu_divergence);
+		CUDA_CHECK;
+		cudaFree(gpu_Domain);
+		CUDA_CHECK;
+		cudaFree(gpu_Out);
+		CUDA_CHECK;
+	}
+
+    delete[] v1;
+    delete[] v2;
+    delete[] diffusivity;
+    delete[] divergence;
+
+}
+*/
+
+void aniso_diff(float *imgIn, int *imgDomain, float *imgOut, int w, int h, int nc, float tau, int N, dim3 grid, dim3 block)
+{
+
+	float *v1 = new float[(size_t)w*h*nc];
+	float *v2 = new float[(size_t)w*h*nc];
+	float *divergence = new float[(size_t)w*h*nc];
+	float *diffusivity = new float[(size_t)w*h];
+	float *imgOutGray = new float[(size_t)w*h];
+
+	int n = w*h*nc;
+
+	for (int i=0; i<N; i++)
+	{
+		// allocate GPU memory
+		float *d_In, *d_v1, *d_v2, *d_Out, *d_Out_Gray;
+		int *d_Domain;
+
+		cudaMalloc(&d_In, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_v1, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_v2, n*sizeof(float));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(d_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+		//dim3 block = dim3(128,1,1);
+
+		//dim3 grid = dim3((n + block.x - 1) / block.x, 1, 1);
+		aniso_global_grad <<<grid,block>>> (d_In, d_v1, d_v2, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(v1, d_v1, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		cudaMemcpy(v2, d_v2, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(d_In);
+		CUDA_CHECK;
+		cudaFree(d_v1);
+		CUDA_CHECK;
+		cudaFree(d_v2);
+		CUDA_CHECK;
+
+
+		// Calculate diffusivity and multiply by gradient
+
+		// allocate GPU memory
+		float *d_diffusivity;
+
+		cudaMalloc(&d_v1, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_v2, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_diffusivity, w*h*sizeof(float));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(d_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_diffusivity, diffusivity, w*h*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+		global_diffusivity <<<grid,block>>> (d_v1, d_v2, d_diffusivity, w, h, nc, w*h);
+		mult_scal_vec <<<grid,block>>> (d_diffusivity, d_v1, w, h, nc, w*h);
+		mult_scal_vec <<<grid,block>>> (d_diffusivity, d_v2, w, h, nc, w*h);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(diffusivity, d_diffusivity, w*h * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		// copy result back to host (CPU) memory
+		cudaMemcpy(v1, d_v1, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		cudaMemcpy(v2, d_v2, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+
+		// free device (GPU) memory
+		cudaFree(d_diffusivity);
+		CUDA_CHECK;
+		cudaFree(d_v1);
+		CUDA_CHECK;
+		cudaFree(d_v2);
+		CUDA_CHECK;
+
+
+
+
+
+		// Calculate divergence of a gradient
+
+		// allocate GPU memory
+		float *d_divergence;
+
+		cudaMalloc(&d_v1, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_v2, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_divergence, n*sizeof(float));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(d_v1, v1, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_v2, v2, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_divergence, divergence, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+		//dim3 block = dim3(128,1,1);
+
+		//dim3 grid = dim3((n + block.x - 1) / block.x, 1, 1);
+		aniso_global_div <<<grid,block>>> (d_v1, d_v2, d_divergence, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(divergence, d_divergence, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(d_v1);
+		CUDA_CHECK;
+		cudaFree(d_v2);
+		CUDA_CHECK;
+		cudaFree(d_divergence);
+		CUDA_CHECK;
+
+		// Update image
+
+		// allocate GPU memory
+		//float *d_In, *d_Out_Gray;
+
+		cudaMalloc(&d_In, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_Out, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_divergence, n*sizeof(float));
+		CUDA_CHECK;
+		cudaMalloc(&d_Domain, n*sizeof(int));
+		CUDA_CHECK;
+
+		// copy host memory to device
+		cudaMemcpy(d_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_divergence, divergence, n*sizeof(float), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+		cudaMemcpy(d_Domain, imgDomain, n*sizeof(int), cudaMemcpyHostToDevice);
+		CUDA_CHECK;
+
+		// launch kernel
+
+		update_aniso_diff <<<grid,block>>> (d_In, d_divergence, d_Domain, d_Out, tau, w, h, nc, n);
+
+		// copy result back to host (CPU) memory
+		cudaMemcpy(imgOut, d_Out, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+		cudaMemcpy(imgIn, d_Out, n * sizeof(float), cudaMemcpyDeviceToHost );
+		CUDA_CHECK;
+
+		// free device (GPU) memory
+		cudaFree(d_In);
+		CUDA_CHECK;
+		cudaFree(d_divergence);
+		CUDA_CHECK;
+		cudaFree(d_Domain);
+		CUDA_CHECK;
+		cudaFree(d_Out);
+		CUDA_CHECK;
+	}
+
+    delete[] v1;
+    delete[] v2;
+    delete[] diffusivity;
+    delete[] divergence;
+
 }
 

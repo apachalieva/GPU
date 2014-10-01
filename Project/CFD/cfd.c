@@ -82,8 +82,10 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 	n = 0;
 	step = 0;
 
+
 	//while( t <= t_end ){
 		if( tau > 0 ) calculate_dt( Re, tau, &dt, dx, dy, imax, jmax, U, V );
+		//dt = 0.001;
 		
 		boundaryvalues( imax, jmax, U, V, initBU, initBV, Flag );
 		
@@ -109,11 +111,11 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 		t += dt;
 		n++;
 
-		//if(step*dt_value <= t){
+		if(iter % 50 == 0){
 			/* output vtk file for visualization */
-			write_vtkFile( VISUAF, n, xlength, ylength, imax, jmax, dx, dy, U, V, P );
+			write_vtkFile( VISUAF, iter, xlength, ylength, imax, jmax, dx, dy, U, V, P );
 			step++;
-		//}	
+		}	
 	//}
 
 	// TODO copy U and V to imgU and imgV
