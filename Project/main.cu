@@ -163,7 +163,6 @@ int main(int argc, char **argv)
   
   
   
-  
   // Allocate arrays
   // input/output image width: w
   // input/output image height: h
@@ -183,6 +182,7 @@ int main(int argc, char **argv)
   float *imgVorticity = new float[(size_t)w*h*nc];
   float *initVorticity = new float[(size_t)w*h*nc];
   int *imgDomain = new int[(size_t)w*h];
+  
   // TODO: Temporarly we consider just a grayscale inpainting
   float *imgU = new float[(size_t)w*h];
   float *imgV = new float[(size_t)w*h];
@@ -282,7 +282,6 @@ int main(int argc, char **argv)
 	imgU[i] = -imgU[i];
       }
       
-      
       // Calculate the inpainting domain	
       // allocate GPU memory
       
@@ -336,6 +335,7 @@ int main(int argc, char **argv)
 	  
 	}
 	// CFD solver
+	// TODO Execute the Navier-Stokes algorithm using CUDA
 	cfd( argc, argv, imgU, imgV, imgDomain, initU, initV, w, h, j );
 	
 	
@@ -399,6 +399,7 @@ int main(int argc, char **argv)
        }
        }
        */
+      
       // copy host memory to device
       cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
       cudaMemcpy(gpu_Out, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
@@ -414,9 +415,6 @@ int main(int argc, char **argv)
       }
       //global_solve_Poisson <<<grid,block>>> (gpu_Out, gpu_In, gpu_Vorticity, gpu_Domain, w, h, nc, n, 0.7, 1);
       
-      
-      
-      
       // copy result back to host (CPU) memory
       cudaMemcpy(imgOut, gpu_In, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
       cudaMemcpy(imgIn, gpu_In, n * sizeof(float), cudaMemcpyDeviceToHost );CUDA_CHECK;
@@ -428,11 +426,11 @@ int main(int argc, char **argv)
       cudaFree(gpu_Vorticity);CUDA_CHECK;
       cudaFree(gpu_Domain);CUDA_CHECK;
       
+      // Edge-Sharpening Anisotropic Diffussion
+      // Perform each 10th iteration of the inpainting algorithm
       if (j+1 % 10 == 0) aniso_diff(imgIn, imgDomain, imgIn, w, h, nc, tau, aniso_iter, grid, block);
       
     }
-    
-    
     
     // show input image
     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)

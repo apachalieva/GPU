@@ -1,6 +1,7 @@
 //______________________________________________________________//
-//	      functionalities.cu includes 			//
-//		all the CUDA functions 				//
+//								  //
+//	      functionalities.cu includes 		   	  //
+//		all the CUDA functions 				  //
 //______________________________________________________________//
 
 #include "functionalities.h"
@@ -8,7 +9,7 @@
 
 
 
-//======================================= Functions for the inpainting ==============================================
+//================Functions for the inpainting ===============//
 
 
 __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity, int w, int h, int nc, int n, int iter )
@@ -87,24 +88,20 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 			{
 				f = dh*dh*initVorticity[ind];
 				//f = -dh*dh*rhs[ind];
-				
 			}
 		}
 		else
 		{
 			f = 0.0f;
 		}			    
-			// TODO: Think about the sign!!!
-		    float val = -( f - (upx + umx + upy + umy) ) / 4.0;
-		    //float val = ((upx + umx + upy + umy) ) / 4.0;
-		    val = sor_theta*val + (1.0-sor_theta)*u0;
+		// TODO: Think about the sign!!!
+		float val = -( f - (upx + umx + upy + umy) ) / 4.0;
+		//float val = ((upx + umx + upy + umy) ) / 4.0;
+		val = sor_theta*val + (1.0-sor_theta)*u0;
 
-		    imgOut[ind] = val;
+		imgOut[ind] = val;
 	    }
-
-
 	}
-
 }
 
 
@@ -142,7 +139,6 @@ __global__ void global_grad( float *imgIn, float *v1, float *v2, int w, int h, i
 	}
 }
 
-
 __device__ float cuda_div_x( float a, float b, int x, int w )
 {
 		if( ( x+1 < w ) && ( x > 0 ) ) return ( a - b );
@@ -150,7 +146,6 @@ __device__ float cuda_div_x( float a, float b, int x, int w )
 		else if( x > 0 ) return ( 0 - b );
 		else return 0.0f;
 }
-
 
 __device__ float cuda_div_y( float a, float b, int y, int h )
 {
@@ -174,7 +169,6 @@ __global__ void global_div( float *v1, float *v2, float *imgOut, int w, int h, i
 		imgOut[ind] = cuda_div_x( v1[ind], v1[ind-1], x, w ) + cuda_div_y( v2[ind], v2[ind-w], y, h );
 	}
 }
-
 
 __global__ void global_norm( float *imgIn, float *imgOut, int w, int h, int n )
 {
@@ -250,7 +244,7 @@ __global__ void global_detect_domain( float *imgMask, int *imgDomain, int w, int
 	}
 }
 
-//======================================= Functions for anisotropic diffusion ==============================================
+//========================= Functions for anisotropic diffusion ==============================
 
 __global__ void update_aniso_diff(float *imgIn, float *divergence, int *imgDomain, float *imgOut, float timestep, int w, int h, int nc, int n)
 {
@@ -296,9 +290,7 @@ __global__ void global_diffusivity(float *v1, float *v2, float *diffusivity, int
 
 	if (ind<n)
 	{ 
-
 		diffusivity[ind] = g_dash(sqrtf( v1[ind]*v1[ind] + v2[ind]*v2[ind]));
-
 	}
 
 }
@@ -367,11 +359,7 @@ __global__ void aniso_global_grad(float *imgIn, float *v1, float *v2, int w, int
 
 		v1[ind] = aniso_cuda_diff_x(imgIn[ind+1], imgIn[ind], x, w);
 		v2[ind] = aniso_cuda_diff_y(imgIn[ind+w], imgIn[ind], y, h);
-
 	}
-
-	
-
 }
 
 
@@ -433,9 +421,6 @@ __global__ void aniso_global_div(float *v1, float *v2, float *imgOut, int w, int
 	}
 
 }
-
-
-
 
 __global__ void aniso_global_norm(float *imgIn, float *imgOut, int w, int h, int n)
 {
@@ -734,10 +719,6 @@ void aniso_diff(float *imgIn, int *imgDomain, float *imgOut, int w, int h, int n
 		CUDA_CHECK;
 		cudaFree(gpu_v2);
 		CUDA_CHECK;
-
-
-
-
 
 		// Calculate divergence of a gradient
 
