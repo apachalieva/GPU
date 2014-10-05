@@ -308,8 +308,7 @@ for (int j=0; j<iter; j++)
 
 if (option == 1)
 {
-
-    if ( j == 0 )
+      if ( j == 0 )
 	{	
 		// Calculate vorticity	
 		// allocate GPU memory
@@ -394,7 +393,7 @@ for (int ind=0; ind<w*h*nc; ind++)
 	cudaMalloc(&gpu_initVorticity, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_Domain, n*sizeof(int));CUDA_CHECK;
 
-
+/*
 if (j==iter-1)
 {
 	for (int ind=0; ind<w*h; ind++)
@@ -403,7 +402,7 @@ if (j==iter-1)
 		poisson = 20000;	
 	}
 }
-
+*/
 	// copy host memory to device
 	cudaMemcpy(gpu_In, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
 	cudaMemcpy(gpu_Out, imgIn, n*sizeof(float), cudaMemcpyHostToDevice);CUDA_CHECK;
