@@ -98,6 +98,7 @@ void showImage(string title, const cv::Mat &mat, int x, int y)
     cv::imshow(wTitle, mat);
 }
 
+
 // adding Gaussian noise
 float noise(float sigma)
 {
@@ -121,6 +122,7 @@ void addNoise(cv::Mat &m, float sigma)
 // cuda error checking
 string prev_file = "";
 int prev_line = 0;
+
 void cuda_check(string file, int line)
 {
     cudaError_t e = cudaGetLastError();
@@ -163,9 +165,9 @@ void forward_color_transf( float *imgRGB, float *imgChrom, int w, int h, int nc 
 	  pb  = -0.169  * r - 0.331 * g + 0.5    * b;
 	  pr  =  0.5    * r - 0.419 * g - 0.081  * b;
 
-	  imgChrom[i + j*w + w*h*0] = clamp ( ( 219 / 255.0 ) * y1 + (  16 / 255.0 ));		// 	  Y1 = clamp (219 * y1 + 16);
-	  imgChrom[i + j*w + w*h*1] = clamp ( ( 224 / 255.0 ) * pb + ( 128 / 255.0 ));		// 	  Cb = clamp (224 * pb + 128);
-	  imgChrom[i + j*w + w*h*2] = clamp ( ( 224 / 255.0 ) * pr + ( 128 / 255.0 ));	        // 	  Cr = clamp (224 * pr + 128);
+	  imgChrom[i + j*w + w*h*0] = clamp ( ( 219 / 255.0 ) * y1 + ( 16  / 255.0 ) );	// 	  Y1 = clamp (219 * y1 + 16);
+	  imgChrom[i + j*w + w*h*1] = clamp ( ( 224 / 255.0 ) * pb + ( 128 / 255.0 ) );	// 	  Cb = clamp (224 * pb + 128);
+	  imgChrom[i + j*w + w*h*2] = clamp ( ( 224 / 255.0 ) * pr + ( 128 / 255.0 ) );	// 	  Cr = clamp (224 * pr + 128);
 
 	  /* or shorter */
 
@@ -189,7 +191,7 @@ void inverse_color_transf( float *imgChrom, float *imgRGB, int w, int h, int nc 
     double y1, pb, pr;
     for( int i = 0; i < w; i++ ){
       for( int j = 0; j < h; j++ ){
-	y1 = ( imgChrom[i + j*w + w*h*0] - (  16 / 255.0 )) / ( 219 / 255.0 );	//     y1 = (Y1 - 16)  / 219.0;
+	y1 = ( imgChrom[i + j*w + w*h*0] - ( 16  / 255.0 )) / ( 219 / 255.0 );	//     y1 = (Y1 - 16)  / 219.0;
 	pb = ( imgChrom[i + j*w + w*h*0] - ( 128 / 255.0 )) / ( 224 / 255.0 );	//     pb = (Cb - 128) / 224.0;
 	pr = ( imgChrom[i + j*w + w*h*0] - ( 128 / 255.0 )) / ( 224 / 255.0 );	//     pr = (Cr - 128) / 224.0;
 
