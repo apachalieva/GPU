@@ -1,14 +1,11 @@
-//======================================================================================================================================================
-//==============================================================CFD CODE================================================================================
-
-    #include "cfd.h"
-    #include "helper.h"
-    #include "visual.h"
-    #include "init.h"
-    #include "uvp.h"
-    #include "boundary_val.h"
-    #include "sor.h"
-
+#include "cfd.h"
+#include "functions.h"
+#include "helper.h"
+#include "visual.h"
+// #include "init.h"
+// #include "uvp.h"
+// #include "boundary_val.h"
+// #include "sor.h"
 
 /**
  * The main operation reads the configuration file, initializes the scenario and
@@ -44,7 +41,8 @@
  * - calculate_uv() Calculate the velocity at the next time step.
  */
 
-int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *initBU, float *initBV, int imax, int jmax, int iter ){
+
+int cfd( int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *initBU, float *initBV, int imax, int jmax, int iter ){
 	double Re, PI, GX, GY, t_end, xlength, ylength, dt, dx, dy, alpha, omg, tau, eps, dt_value, t, res, dp;
 	double **U, **V, **P, **F, **G, **RS;
 	int n, step, it, itermax;
@@ -115,7 +113,7 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 			/* output vtk file for visualization */
 			write_vtkFile( VISUAF, iter, xlength, ylength, imax, jmax, dx, dy, U, V, P );
 			step++;
-		//}	
+		}	
 	//}
 
 	// TODO copy U and V to imgU and imgV
@@ -147,5 +145,3 @@ int cfd(int argc, char** args, float *imgU, float *imgV, int *imgDomain, float *
 
 	return 0;
 }
-
-//======================================================================================================================================================
