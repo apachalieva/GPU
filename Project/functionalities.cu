@@ -10,6 +10,16 @@
 
 //======================================= Functions for the inpainting ==============================================
 
+__global__ void global_reverse_sign( float *Image, int n )
+{
+  int ind = threadIdx.x + blockDim.x * blockIdx.x;
+
+  if( ind < n )
+  {
+    Image[ind] = -Image[ind];
+  }
+
+}
 
 __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,  int *imgDomain,  int w, int h, int nc, int n, int FullImage )
 {
@@ -18,37 +28,38 @@ __global__ void global_vorticity( float *imgU, float *imgV, float *imgVorticity,
 
   float dVdx, dUdy;
 
-  //ch = ind / w*h;
-  ch = 0;
+  ch = (int)(ind) / (int)(w*h);
+  //ch = 0;
   y = ( ind - ch*w*h ) / w;
   x = ( ind - ch*w*h ) % w;
+  int indDomain = x + w*y;
 
   if( ind < n )
   { 
-    if ((FullImage == 0) && (x-1>0) && (x+1<w) && (y-1>0) && (y+1<h)  && (imgDomain[ind] == 2))
+    if ((FullImage == 0) && (x-1>0) && (x+1<w) && (y-1>0) && (y+1<h)  && (imgDomain[indDomain] == 2))
     {
-      while ( (imgDomain[x+1 + y*w + ch*w*h] == 1) || (imgDomain[x-1 + y*w + ch*w*h] == 1)  || (imgDomain[x + (y+1)*w + ch*w*h] == 1) || (imgDomain[x + (y-1)*w + ch*w*h] == 1) || ((imgDomain[x+1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0)) || ((imgDomain[x-1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0)) || ((imgDomain[x+1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0)) || ((imgDomain[x-1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0)) )
+      while ( (imgDomain[x+1 + y*w] == 1) || (imgDomain[x-1 + y*w] == 1)  || (imgDomain[x + (y+1)*w] == 1) || (imgDomain[x + (y-1)*w] == 1) || ((imgDomain[x+1 + (y+1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0)) || ((imgDomain[x-1 + (y-1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0)) || ((imgDomain[x+1 + (y-1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0)) || ((imgDomain[x-1 + (y+1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0)) )
       {
-	if (imgDomain[x+1 + y*w + ch*w*h] == 1) x = x - 1;
-	if (imgDomain[x-1 + y*w + ch*w*h] == 1) x = x + 1;
-	if (imgDomain[x + (y+1)*w + ch*w*h] == 1) y = y - 1;
-	if (imgDomain[x + (y-1)*w + ch*w*h] == 1) y = y + 1;
-	if ((imgDomain[x+1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0))
+	if (imgDomain[x+1 + y*w] == 1) x = x - 1;
+	if (imgDomain[x-1 + y*w] == 1) x = x + 1;
+	if (imgDomain[x + (y+1)*w] == 1) y = y - 1;
+	if (imgDomain[x + (y-1)*w] == 1) y = y + 1;
+	if ((imgDomain[x+1 + (y+1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0))
 	{
 	  x = x - 1;
 	  y = y - 1;
 	}
-	if ((imgDomain[x-1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0))
+	if ((imgDomain[x-1 + (y-1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0))
 	{
 	  x = x + 1;
 	  y = y + 1;
 	}
-	if ((imgDomain[x+1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0))
+	if ((imgDomain[x+1 + (y-1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0))
 	{
 	  x = x - 1;
 	  y = y + 1;
 	}
-	if ((imgDomain[x-1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0))
+	if ((imgDomain[x-1 + (y+1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0))
 	{
 	  x = x + 1;
 	  y = y - 1;
@@ -75,11 +86,13 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 
   int ind = threadIdx.x + blockDim.x * blockIdx.x;
   int x, y, ch;
-  //ch = ind / w*h;
-  ch = 0;
+  ch = (int)(ind) / (int)(w*h);
+  //ch = 0;
 
   x = ( ind - ch*w*h ) % w;
   y = ( ind - ch*w*h ) / w;
+
+  int indDomain = x + w*y;
 
   if ( ind<n ) 
   { 	
@@ -99,7 +112,7 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
       
       //if (imgDomain[ind] == 1)
       //{
-	if ((imgDomain[ind+1] == 1) && (imgDomain[ind-1] == 1) && (imgDomain[ind+w] == 1) && (imgDomain[ind-w] == 1))
+	if ((imgDomain[indDomain+1] == 1) && (imgDomain[indDomain-1] == 1) && (imgDomain[indDomain+w] == 1) && (imgDomain[indDomain-w] == 1))
 	{
 	  f = dh*dh*rhs[ind];
 	}
@@ -120,6 +133,7 @@ __global__ void global_solve_Poisson (float *imgOut, float *imgIn, float *initVo
 	  val = sor_theta*val + (1.0-sor_theta)*u0;
 	  
 	  imgOut[ind] = val;
+
       }
    }
 }
@@ -129,37 +143,38 @@ __global__ void global_grad( float *imgIn,  int *imgDomain,  float *v1, float *v
   int ind = threadIdx.x + blockDim.x * blockIdx.x;
   int x, y, ch;	
   
-  //ch = ind / w*h;
-  ch = 0;
+  ch = (int)(ind) / (int)(w*h);
+  //ch = 0;
   y = ( ind - ch*w*h ) / w;
   x = ( ind - ch*w*h ) % w;
+  int indDomain = x + w*y;
   
   if( ind < n )
   { 
-    if ((FullImage == 0) && (x-1>0) && (x+1<w) && (y-1>0) && (y+1<h) && (imgDomain[ind] == 2))
+    if ((FullImage == 0) && (x-1>0) && (x+1<w) && (y-1>0) && (y+1<h)  && (imgDomain[indDomain] == 2))
     {
-      while ( (imgDomain[x+1 + y*w + ch*w*h] == 1) || (imgDomain[x-1 + y*w + ch*w*h] == 1)  || (imgDomain[x + (y+1)*w + ch*w*h] == 1) || (imgDomain[x + (y-1)*w + ch*w*h] == 1) || ((imgDomain[x+1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0)) || ((imgDomain[x-1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0)) || ((imgDomain[x+1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0)) || ((imgDomain[x-1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0)) )
+      while ( (imgDomain[x+1 + y*w] == 1) || (imgDomain[x-1 + y*w] == 1)  || (imgDomain[x + (y+1)*w] == 1) || (imgDomain[x + (y-1)*w] == 1) || ((imgDomain[x+1 + (y+1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0)) || ((imgDomain[x-1 + (y-1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0)) || ((imgDomain[x+1 + (y-1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0)) || ((imgDomain[x-1 + (y+1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0)) )
       {
-	if (imgDomain[x+1 + y*w + ch*w*h] == 1) x = x - 1;
-	if (imgDomain[x-1 + y*w + ch*w*h] == 1) x = x + 1;
-	if (imgDomain[x + (y+1)*w + ch*w*h] == 1) y = y - 1;
-	if (imgDomain[x + (y-1)*w + ch*w*h] == 1) y = y + 1;
-	if ((imgDomain[x+1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0))
+	if (imgDomain[x+1 + y*w] == 1) x = x - 1;
+	if (imgDomain[x-1 + y*w] == 1) x = x + 1;
+	if (imgDomain[x + (y+1)*w] == 1) y = y - 1;
+	if (imgDomain[x + (y-1)*w] == 1) y = y + 1;
+	if ((imgDomain[x+1 + (y+1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0))
 	{
 	  x = x - 1;
 	  y = y - 1;
 	}
-	if ((imgDomain[x-1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0))
+	if ((imgDomain[x-1 + (y-1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0))
 	{
 	  x = x + 1;
 	  y = y + 1;
 	}
-	if ((imgDomain[x+1 + (y-1)*w + ch*w*h] == 1) && (imgDomain[x+1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y-1)*w + ch*w*h] == 0))
+	if ((imgDomain[x+1 + (y-1)*w] == 1) && (imgDomain[x+1 + y*w] == 0) && (imgDomain[x + (y-1)*w] == 0))
 	{
 	  x = x - 1;
 	  y = y + 1;
 	}
-	if ((imgDomain[x-1 + (y+1)*w + ch*w*h] == 1) && (imgDomain[x-1 + y*w + ch*w*h] == 0) && (imgDomain[x + (y+1)*w + ch*w*h] == 0))
+	if ((imgDomain[x-1 + (y+1)*w] == 1) && (imgDomain[x-1 + y*w] == 0) && (imgDomain[x + (y+1)*w] == 0))
 	{
 	  x = x + 1;
 	  y = y - 1;
@@ -173,26 +188,37 @@ __global__ void global_grad( float *imgIn,  int *imgDomain,  float *v1, float *v
   }
 }
 
-
+/*
 __global__ void global_norm( float *imgIn, float *imgOut, int w, int h, int n )
 {
   int ind = threadIdx.x + blockDim.x * blockIdx.x;
+  float temp;
   if( ind < n )
-  { 
+  {
     imgOut[ind] = imgIn[ind]*imgIn[ind];
     //imgOut[ind] += imgIn[ind+w*h]*imgIn[ind+w*h];
     //imgOut[ind] += imgIn[ind+2*w*h]*imgIn[ind+2*w*h];
     imgOut[ind] = sqrtf(imgOut[ind]);
   }
 }
-
+*/
+/*
 __device__ int check_color( float *c, float r, float g, float b )
 {
-  float eps = 0.0001;
+  float eps = 0.0001;// Color transformation
+// source : http://linuxtv.org/downloads/v4l-dvb-apis/colorspaces.html
+// float clamp (double x)
+// {
+//     float r = x;      /* round to nearest */
+// 	
+//     if (r < 0.0)       return 0.0f;
+//     else if (r > 1.0)  return 1.0f;
+//     else               return r;
+// }
   
-  if( ( fabsf( r-c[0] ) < eps) && ( fabsf( g-c[1] ) < eps) && ( fabsf( b-c[2] ) < eps ) ) return 1;
-  else return 0;	
-}
+//  if( ( fabsf( r-c[0] ) < eps) && ( fabsf( g-c[1] ) < eps) && ( fabsf( b-c[2] ) < eps ) ) return 1;
+//  else return 0;	
+//}
 
 /*
   *  __global__ void global_detect_domain( float *imgIn, int *imgDomain, int w, int h, int n )

@@ -161,9 +161,9 @@ int main(int argc, char **argv)
     // ### TODO: Change the output image format as needed
     // ###
     // ###
-    //cv::Mat mOut(h,w,mIn.type());  // mOut will have the same number of channels as the input image, nc layers
+    cv::Mat mOut(h,w,mIn.type());  // mOut will have the same number of channels as the input image, nc layers
     //cv::Mat mOut(h,w,CV_32FC3);    // mOut will be a color image, 3 layers
-    cv::Mat mOut(h,w,CV_32FC1);    // mOut will be a grayscale image, 1 layer
+    //cv::Mat mOut(h,w,CV_32FC1);    // mOut will be a grayscale image, 1 layer
     // ### Define your own output images here as needed
 
 
@@ -189,11 +189,11 @@ int main(int argc, char **argv)
 	float *initVorticity = new float[(size_t)w*h*nc];
 	int *imgDomain = new int[(size_t)w*h];
 	// TODO: Temporarly we consider just a grayscale inpainting
-	float *imgU = new float[(size_t)w*h];
-	float *imgV = new float[(size_t)w*h];
+	float *imgU = new float[(size_t)w*h*nc];
+	float *imgV = new float[(size_t)w*h*nc];
 	
-	float *initU = new float[(size_t)w*h];
-	float *initV = new float[(size_t)w*h];
+	float *initU = new float[(size_t)w*h*nc];
+	float *initV = new float[(size_t)w*h*nc];
 
 	// TODO: Introduced temporarily to display the domain
 	float *floatDomain = new float[(size_t)w*h];
@@ -242,6 +242,7 @@ int main(int argc, char **argv)
     
 //===============================================================================================//
 
+forward_color_transf( imgIn, imgIn, w, h, nc ); 
 
 for (int j=0; j<iter; j++)
 {
@@ -274,25 +275,14 @@ for (int j=0; j<iter; j++)
 	cudaFree(gpu_Mask);CUDA_CHECK;
 	cudaFree(gpu_Domain);CUDA_CHECK;
 
-// TODO: Just for diagnostic purposes
-	for (int i=0; i<w*h; i++)
-	{
-		floatDomain[i] = imgDomain[i]*0.5;
-	}
-
-    convert_layered_to_mat(mOut, floatDomain);
-    //mOut *=0.5;
-    showImage("imgDomain", mOut, 100+w+80, 100);
-
 	// Calculate gradient
 	cudaMalloc(&gpu_In, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_v1, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_v2, n*sizeof(float));CUDA_CHECK;
 	cudaMalloc(&gpu_Domain, w*h*sizeof(int));CUDA_CHECK;
 	
-	// TODO: Temporarly we consider just a grayscale inpainting
-	cudaMalloc(&gpu_U, w*h*sizeof(float));CUDA_CHECK;
-	cudaMalloc(&gpu_V, w*h*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_U, n*sizeof(float));CUDA_CHECK;
+	cudaMalloc(&gpu_V, n*sizeof(float));CUDA_CHECK;
 
 
 	// copy host memory to device
@@ -309,8 +299,10 @@ for (int j=0; j<iter; j++)
 	// copy result back to host (CPU) memory
 	cudaMemcpy( v1, gpu_v1, n * sizeof(float), cudaMemcpyDeviceToHost ); CUDA_CHECK;
 	cudaMemcpy( v2, gpu_v2, n * sizeof(float), cudaMemcpyDeviceToHost ); CUDA_CHECK;
-	cudaMemcpy( imgU, gpu_v2, w*h * sizeof(float), cudaMemcpyDeviceToHost ); CUDA_CHECK;
-	cudaMemcpy( imgV, gpu_v1, w*h * sizeof(float), cudaMemcpyDeviceToHost ); CUDA_CHECK;
+	// Invert the V values according t: V = -dI/dx
+	//global_inverse_sign <<<grid,block>>> (gpu_v2, n);
+	cudaMemcpy( imgU, gpu_v2, n * sizeof(float), cudaMemcpyDeviceToHost ); CUDA_CHECK;
+	cudaMemcpy( imgV, gpu_v1, n * sizeof(float), cudaMemcpyDeviceToHost ); CUDA_CHECK;
 
 	// free device (GPU) memory
 	cudaFree(gpu_In); CUDA_CHECK;
@@ -320,13 +312,13 @@ for (int j=0; j<iter; j++)
 	cudaFree(gpu_V); CUDA_CHECK;
 	cudaFree(gpu_Domain); CUDA_CHECK;
 
-	// Invert the V values according t: V = -dI/dx
-	// TODO: Temporarly we consider just a grayscale inpainting 
-	for (int i=0; i<w*h; i++)
-	{
-		//imgV[i] = -imgV[i];
-		imgU[i] = -imgU[i];
-	}
+// // 	Invert the V values according t: V = -dI/dx
+// // 	TODO: Invert in parallel 
+// 	for (int i=0; i<n; i++)
+// 	{
+// 		//imgV[i] = -imgV[i];
+// 		imgU[i] = -imgU[i];
+// 	}
 	
     timer.end();  float t = timer.get();  // elapsed time in seconds
     cout << "time: " << t*1000 << " ms" << endl;
@@ -363,7 +355,10 @@ if (option == 1)
 
 	}
 	// CFD solver
-	cfd( argc, argv, imgU, imgV, imgDomain, initU, initV, w, h, j );
+	for (int channel = 0; channel < nc; channel++)
+	{
+		cfd( argc, argv, &(imgU[channel*w*h]), &(imgV[channel*w*h]), imgDomain, &(initU[channel*w*h]), &(initV[channel*w*h]), w, h, j );
+	}
 
 	// Calculate vorticity	
 	// allocate GPU memory
@@ -394,7 +389,7 @@ if (option == 1)
 }
 else if (option == 0)
 {
-  for (int ind=0; ind<w*h*nc; ind++)
+  for (int ind=0; ind<n; ind++)
     {
 	    imgVorticity[ind] = 0.0f;
 	    initVorticity[ind] = 0.0f;
@@ -403,10 +398,18 @@ else if (option == 0)
 
     if ( j == 0 )
 	{	
-		for ( int ind = 0; ind < w*h*nc; ind++ )
+		for ( int ind = 0; ind < n; ind++ )
 		{
-			if ( imgDomain[ind] == 1 )
-			imgIn[ind] = 1.0;
+
+		  int x, y, ch;	
+
+		  ch = (int)(ind) / (int)(w*h);
+		  y = ( ind - ch*w*h ) / w;
+		  x = ( ind - ch*w*h ) % w;
+		  int indDomain = x + w*y;
+
+			if ( imgDomain[indDomain] == 1 )
+				imgIn[ind] = 1.0;
 		}
 	}
 
@@ -416,7 +419,7 @@ else if (option == 0)
 	cudaMalloc(&gpu_In, n*sizeof(float)); CUDA_CHECK;
 	cudaMalloc(&gpu_Vorticity, n*sizeof(float)); CUDA_CHECK;
 	cudaMalloc(&gpu_initVorticity, n*sizeof(float)); CUDA_CHECK;
-	cudaMalloc(&gpu_Domain, n*sizeof(int)); CUDA_CHECK;
+	cudaMalloc(&gpu_Domain, w*h*sizeof(int)); CUDA_CHECK;
 
 /*
 if (j==iter-1)
@@ -456,9 +459,22 @@ if (j==iter-1)
 
 	if ( j+1 % 10 == 0 ) aniso_diff(imgIn, imgDomain, imgIn, w, h, nc, tau, aniso_iter, grid, block);
 }
-    // show input image
-    showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
 
+inverse_color_transf( imgIn, imgOut, w, h, nc );
+
+    // show input image
+    //mIn /= 255.f;
+//     showImage("Input", mIn, 100, 100);  // show at position (x_from_left=100,y_from_above=100)
+// 
+//     // TODO: Just for diagnostic purposes
+// 	for (int i=0; i<w*h; i++)
+// 	{
+// 		floatDomain[i] = imgDomain[i]*0.5;
+// 	}
+// 
+//     convert_layered_to_mat(mOut, floatDomain);
+//     showImage("imgDomain", mOut, 100+w+80, 100);
+    
     // show output image: first convert to interleaved opencv format from the layered raw array
     convert_layered_to_mat(mOut, imgVorticity);
     mOut *=1000;
@@ -478,6 +494,7 @@ if (j==iter-1)
 
     // show output image: first convert to interleaved opencv format from the layered raw array
     convert_layered_to_mat(mOut, imgOut);
+    //mOut /= 255.f;
     showImage("Output", mOut, 100+w+40, 100);
 
     // ### Display your own output images here as needed

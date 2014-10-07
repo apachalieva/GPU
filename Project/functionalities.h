@@ -27,4 +27,5 @@ __global__ void  global_detect_domain2( float *imgIn, int *imgDomain, int w, int
 __global__ void  global_detect_domain3( float *imgIn, int *imgDomain, int w, int h, int n );
 __global__ void  global_vorticity( float *imgU, float *imgV, float *imgVorticity,  int *imgDomain,  int w, int h, int nc, int n, int FullImage );
 __global__ void  global_solve_Poisson (float *imgOut, float *imgIn, float *initVorticity, float *rhs, int *mask_toInpaint, int w, int h, int nc, int n, float sor_theta, int redOrBlack);
+__global__ void  global_reverse_sign(float *Image, int n);
 void aniso_diff(float *imgIn, int *imgDomain, float *imgOut, int w, int h, int nc, float tau, int N, dim3 grid, dim3 block);
